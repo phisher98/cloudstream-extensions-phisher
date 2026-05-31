@@ -23,8 +23,12 @@ import com.lagradost.cloudstream3.CloudStreamApp
 class UltimaPlugin : Plugin() {
     var activity: AppCompatActivity? = null
 
+    // Store references for cleanup
+    private var lifecycleCallbacks: android.app.Application.ActivityLifecycleCallbacks? = null
+    private var registeredApp: android.app.Application? = null
+
     // Managed coroutine scope — all coroutines tied to plugin lifecycle
-    private val pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // Track which categories have local changes pending push
     private val dirtyCategories = mutableSetOf<SyncCategory>()
@@ -78,11 +82,6 @@ class UltimaPlugin : Plugin() {
         scheduleDebouncedPush()
     }
 
-    private fun markDirtyFromKey(key: String) {
-        val category = UltimaBackupUtils.classifyKey(key) ?: return
-        markDirty(category)
-    }
-
     private fun consumeDirtyCategories(): Set<SyncCategory> {
         synchronized(dirtyCategoriesLock) {
             val copy = dirtyCategories.toSet()
@@ -121,7 +120,7 @@ class UltimaPlugin : Plugin() {
         }
 
         try {
-            val manifest = UltimaSettingsSyncUtils.fetchManifest(appContext)
+            val manifest = UltimaSettingsSyncUtils.fetchManifest()
             if (manifest == null) {
                 Log.d(TAG, "No manifest found in cloud")
                 return false
@@ -145,7 +144,7 @@ class UltimaPlugin : Plugin() {
                 categoriesToFetch.map { (category, meta) ->
                     async(Dispatchers.IO) {
                         try {
-                            val payload = UltimaSettingsSyncUtils.fetchCategory(appContext, category)
+                            val payload = UltimaSettingsSyncUtils.fetchCategory(category)
                             if (payload != null && payload.data.isNotBlank()) {
                                 Triple(category, meta, payload)
                             } else null
@@ -223,7 +222,7 @@ class UltimaPlugin : Plugin() {
         Log.d(TAG, "Checking for v1 data to migrate...")
 
         try {
-            val oldData = UltimaSettingsSyncUtils.fetchSharedData(context)
+            val oldData = UltimaSettingsSyncUtils.fetchSharedData()
             if (oldData != null && !oldData.syncedData.isNullOrBlank()) {
                 Log.d(TAG, "Found v1 shared_data, migrating to v2 categories...")
 
@@ -231,7 +230,6 @@ class UltimaPlugin : Plugin() {
                     showToast("Migrating sync data to v2...")
                 }
 
-                val fullBackup = mapper.readValue<BackupFile>(oldData.syncedData!!)
                 val resumeWatching = getResumeWatching()
 
                 // Build batch of categories to push
@@ -248,11 +246,11 @@ class UltimaPlugin : Plugin() {
 
                 // Batch push all categories
                 if (categoryData.isNotEmpty()) {
-                    UltimaSettingsSyncUtils.pushCategories(context, categoryData)
+                    UltimaSettingsSyncUtils.pushCategories(categoryData)
                 }
 
                 // Clean up old data
-                UltimaSettingsSyncUtils.deleteSharedData(context)
+                UltimaSettingsSyncUtils.deleteSharedData()
                 Log.d(TAG, "Deleted old v1 shared_data")
 
                 withContext(Dispatchers.Main) {
@@ -268,7 +266,40 @@ class UltimaPlugin : Plugin() {
 
     // --- Plugin Lifecycle ---
 
+    private fun cleanup() {
+        // Cancel all coroutines
+        pushJob?.cancel()
+        ssePullJob?.cancel()
+        sseCall?.cancel()
+        pluginScope.cancel()
+
+        // Unregister SharedPreferences listeners
+        try {
+            dataPrefsListener?.let { listener ->
+                CloudStreamApp.context?.getSharedPrefs()?.unregisterOnSharedPreferenceChangeListener(listener)
+            }
+            defaultPrefsListener?.let { listener ->
+                CloudStreamApp.context?.getDefaultSharedPrefs()?.unregisterOnSharedPreferenceChangeListener(listener)
+            }
+        } catch (_: Exception) {}
+        dataPrefsListener = null
+        defaultPrefsListener = null
+
+        // Unregister activity lifecycle callbacks
+        lifecycleCallbacks?.let { cb ->
+            registeredApp?.unregisterActivityLifecycleCallbacks(cb)
+        }
+        lifecycleCallbacks = null
+        registeredApp = null
+
+        activity = null
+    }
+
     override fun load(context: Context) {
+        // Defensive cleanup — if load() is called again (plugin reload), clean up previous state
+        cleanup()
+        pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
         activity = context as? AppCompatActivity
         registerMainAPI(Ultima(this))
 
@@ -307,7 +338,7 @@ class UltimaPlugin : Plugin() {
 
                     // If this is a fresh setup with no cloud data, do initial push
                     if (creds.backupDevice) {
-                        val manifest = UltimaSettingsSyncUtils.fetchManifest(context)
+                        val manifest = UltimaSettingsSyncUtils.fetchManifest()
                         if (manifest == null) {
                             Log.d(TAG, "No manifest in cloud — performing initial push")
                             pushAllCategories(context)
@@ -353,10 +384,10 @@ class UltimaPlugin : Plugin() {
             }
         }
 
-        val app = context.applicationContext as? android.app.Application
-        app?.registerActivityLifecycleCallbacks(object : android.app.Application.ActivityLifecycleCallbacks {
+        val appInstance = context.applicationContext as? android.app.Application
+        val callback = object : android.app.Application.ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: android.app.Activity) {
-                if (activity is com.lagradost.cloudstream3.MainActivity) {
+                if (activity is MainActivity) {
                     this@UltimaPlugin.activity = activity as? AppCompatActivity
                     pluginScope.launch {
                         try {
@@ -379,7 +410,10 @@ class UltimaPlugin : Plugin() {
                     this@UltimaPlugin.activity = null
                 }
             }
-        })
+        }
+        lifecycleCallbacks = callback
+        registeredApp = appInstance
+        appInstance?.registerActivityLifecycleCallbacks(callback)
 
         startSseListener(context)
     }
@@ -479,7 +513,7 @@ class UltimaPlugin : Plugin() {
                         sseRetryCount = 0
                     }
 
-                    val source = response.body?.source() ?: return
+                    val source = response.body.source()
                     try {
                         var currentEvent: String? = null
                         while (true) {
@@ -586,17 +620,13 @@ class UltimaPlugin : Plugin() {
 
         if (categoryData.isNotEmpty()) {
             lastPushTimestamp = System.currentTimeMillis()
-            val pushed = UltimaSettingsSyncUtils.pushCategories(context, categoryData)
+            val pushed = UltimaSettingsSyncUtils.pushCategories(categoryData)
             lastPushTimestamp = System.currentTimeMillis()
             Log.d(TAG, "Force-pushed ${pushed.size}/${categoryData.size} categories")
         }
     }
 
     // --- Force pull all categories (used for Sync Now) ---
-
-    suspend fun forcePullAllCategories(context: Context): Boolean {
-        return pullChangedCategories(context, force = true)
-    }
 
     fun reload() {
         pluginScope.launch(Dispatchers.Main) {
@@ -629,100 +659,6 @@ class UltimaPlugin : Plugin() {
         }
     }
 
-    suspend fun mergeAndSyncCategory(context: Context, category: SyncCategory) {
-        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return
-        if (!creds.isLoggedIn()) return
-
-        val isBackup = creds.isBackupEnabled(category)
-        val isRestore = creds.isRestoreEnabled(category)
-
-        if (!isBackup && !isRestore) return
-
-        try {
-            // 1. Fetch cloud data
-            val cloudPayload = UltimaSettingsSyncUtils.fetchCategory(context, category)
-            val cloudBackup = if (cloudPayload != null && cloudPayload.data.isNotBlank()) {
-                try {
-                    mapper.readValue<BackupFile>(cloudPayload.data)
-                } catch (e: Exception) {
-                    null
-                }
-            } else null
-
-            // 2. Get local data
-            val resumeWatching = getResumeWatching()
-            val localBackup = UltimaBackupUtils.getBackupForCategory(context, category, resumeWatching)
-
-            // 3. Check emptiness
-            val isLocalEmpty = localBackup == null || 
-                ((localBackup.datastore.bool.isNullOrEmpty() && localBackup.datastore.int.isNullOrEmpty() && localBackup.datastore.string.isNullOrEmpty() && localBackup.datastore.float.isNullOrEmpty() && localBackup.datastore.long.isNullOrEmpty() && localBackup.datastore.stringSet.isNullOrEmpty()) &&
-                 (localBackup.settings.bool.isNullOrEmpty() && localBackup.settings.int.isNullOrEmpty() && localBackup.settings.string.isNullOrEmpty() && localBackup.settings.float.isNullOrEmpty() && localBackup.settings.long.isNullOrEmpty() && localBackup.settings.stringSet.isNullOrEmpty()))
-
-            val isCloudEmpty = cloudBackup == null ||
-                ((cloudBackup.datastore.bool.isNullOrEmpty() && cloudBackup.datastore.int.isNullOrEmpty() && cloudBackup.datastore.string.isNullOrEmpty() && cloudBackup.datastore.float.isNullOrEmpty() && cloudBackup.datastore.long.isNullOrEmpty() && cloudBackup.datastore.stringSet.isNullOrEmpty()) &&
-                 (cloudBackup.settings.bool.isNullOrEmpty() && cloudBackup.settings.int.isNullOrEmpty() && cloudBackup.settings.string.isNullOrEmpty() && cloudBackup.settings.float.isNullOrEmpty() && cloudBackup.settings.long.isNullOrEmpty() && cloudBackup.settings.stringSet.isNullOrEmpty()))
-
-            if (isLocalEmpty) {
-                // Local is empty: pull from cloud if available
-                if (!isCloudEmpty && cloudBackup != null && isRestore) {
-                    Log.d(TAG, "Local is empty for ${category.key}, pulling from cloud")
-                    isRestoring = true
-                    try {
-                        restoreAndReload(context, category, cloudBackup)
-                    } finally {
-                        restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
-                        withContext(Dispatchers.Main) {
-                            isRestoring = false
-                        }
-                    }
-                    // Use the cloud payload timestamp directly instead of re-fetching manifest
-                    UltimaStorageManager.setCategoryTimestamp(category, cloudPayload?.ts ?: System.currentTimeMillis())
-                    val dataHash = UltimaBackupUtils.computeHash(cloudPayload?.data ?: "")
-                    UltimaStorageManager.setCategoryHash(category, dataHash)
-                }
-            } else if (isCloudEmpty) {
-                // Cloud is empty: push local to cloud if available
-                if (localBackup != null && isBackup) {
-                    Log.d(TAG, "Cloud is empty for ${category.key}, pushing local to cloud")
-                    val data = localBackup.toJson()
-                    val hash = UltimaBackupUtils.computeHash(data)
-                    UltimaSettingsSyncUtils.pushCategory(context, category, data, hash)
-                    lastPushTimestamp = System.currentTimeMillis()
-                }
-            } else {
-                // Both have data: merge them
-                if (localBackup != null && cloudBackup != null) {
-                    Log.d(TAG, "Merging local and cloud data for ${category.key}")
-                    val localCategoryTs = UltimaStorageManager.getCategoryTimestamp(category)
-                    val mergedBackup = UltimaBackupUtils.mergeBackupFiles(localBackup, cloudBackup, localCategoryTs)
-                    if (mergedBackup != null) {
-                        // Write merged data locally if restore is enabled
-                        if (isRestore) {
-                            isRestoring = true
-                            try {
-                                restoreAndReload(context, category, mergedBackup)
-                            } finally {
-                                restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
-                                withContext(Dispatchers.Main) {
-                                    isRestoring = false
-                                }
-                            }
-                        }
-                        // Push merged data to cloud if backup is enabled
-                        if (isBackup) {
-                            val data = mergedBackup.toJson()
-                            val hash = UltimaBackupUtils.computeHash(data)
-                            UltimaSettingsSyncUtils.pushCategory(context, category, data, hash)
-                            lastPushTimestamp = System.currentTimeMillis()
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error merging and syncing category ${category.key}: ${e.message}")
-        }
-    }
-
     suspend fun mergeAndSyncAllCategories(context: Context) {
         val appContext = context.applicationContext
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return
@@ -731,7 +667,7 @@ class UltimaPlugin : Plugin() {
         consumeDirtyCategories()
 
         // Fetch manifest once for all categories
-        val manifest = UltimaSettingsSyncUtils.fetchManifest(appContext)
+        val manifest = UltimaSettingsSyncUtils.fetchManifest()
         val resumeWatching = getResumeWatching()
 
         // Fetch all cloud category payloads in parallel
@@ -743,7 +679,7 @@ class UltimaPlugin : Plugin() {
             enabledCategories.map { category ->
                 async(Dispatchers.IO) {
                     try {
-                        val payload = UltimaSettingsSyncUtils.fetchCategory(appContext, category)
+                        val payload = UltimaSettingsSyncUtils.fetchCategory(category)
                         category to payload
                     } catch (e: Exception) {
                         Log.e(TAG, "Error fetching category ${category.key}: ${e.message}")
@@ -779,7 +715,7 @@ class UltimaPlugin : Plugin() {
                      (cloudBackup.settings.bool.isNullOrEmpty() && cloudBackup.settings.int.isNullOrEmpty() && cloudBackup.settings.string.isNullOrEmpty() && cloudBackup.settings.float.isNullOrEmpty() && cloudBackup.settings.long.isNullOrEmpty() && cloudBackup.settings.stringSet.isNullOrEmpty()))
 
                 if (isLocalEmpty) {
-                    if (!isCloudEmpty && cloudBackup != null && isRestore) {
+                    if (!isCloudEmpty && isRestore) {
                         val cloudMeta = manifest?.getMeta(category)
                         val cloudHash = cloudMeta?.hash ?: ""
                         val localHash = UltimaStorageManager.getCategoryHash(category)
@@ -802,7 +738,7 @@ class UltimaPlugin : Plugin() {
                         }
                     }
                 } else if (isCloudEmpty) {
-                    if (localBackup != null && isBackup) {
+                    if (isBackup) {
                         val data = localBackup.toJson()
                         val hash = UltimaBackupUtils.computeHash(data)
                         val cloudMeta = manifest?.getMeta(category)
@@ -813,39 +749,37 @@ class UltimaPlugin : Plugin() {
                         }
                     }
                 } else {
-                    if (localBackup != null && cloudBackup != null) {
-                        val localCategoryTs = UltimaStorageManager.getCategoryTimestamp(category)
-                        val mergedBackup = UltimaBackupUtils.mergeBackupFiles(localBackup, cloudBackup, localCategoryTs)
-                        if (mergedBackup != null) {
-                            val data = mergedBackup.toJson()
-                            val hash = UltimaBackupUtils.computeHash(data)
-                            
-                            val localHash = UltimaStorageManager.getCategoryHash(category)
-                            val cloudMeta = manifest?.getMeta(category)
-                            val cloudHash = cloudMeta?.hash ?: ""
+                    val localCategoryTs = UltimaStorageManager.getCategoryTimestamp(category)
+                    val mergedBackup = UltimaBackupUtils.mergeBackupFiles(localBackup, cloudBackup, localCategoryTs)
+                    if (mergedBackup != null) {
+                        val data = mergedBackup.toJson()
+                        val hash = UltimaBackupUtils.computeHash(data)
 
-                            if (hash != localHash && isRestore) {
-                                Log.d(TAG, "Merged data different from local for ${category.key}, restoring")
-                                isRestoring = true
-                                try {
-                                    restoreAndReload(appContext, category, mergedBackup)
-                                    restoredAny = true
-                                } finally {
-                                    restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
-                                    withContext(Dispatchers.Main) {
-                                        isRestoring = false
-                                    }
-                                }
-                                UltimaStorageManager.setCategoryHash(category, hash)
-                                if (cloudMeta != null) {
-                                    UltimaStorageManager.setCategoryTimestamp(category, cloudMeta.ts)
+                        val localHash = UltimaStorageManager.getCategoryHash(category)
+                        val cloudMeta = manifest?.getMeta(category)
+                        val cloudHash = cloudMeta?.hash ?: ""
+
+                        if (hash != localHash && isRestore) {
+                            Log.d(TAG, "Merged data different from local for ${category.key}, restoring")
+                            isRestoring = true
+                            try {
+                                restoreAndReload(appContext, category, mergedBackup)
+                                restoredAny = true
+                            } finally {
+                                restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
+                                withContext(Dispatchers.Main) {
+                                    isRestoring = false
                                 }
                             }
-
-                            if (hash != cloudHash && isBackup) {
-                                Log.d(TAG, "Merged data different from cloud for ${category.key}, queuing push")
-                                categoriesToPush[category] = Pair(data, hash)
+                            UltimaStorageManager.setCategoryHash(category, hash)
+                            if (cloudMeta != null) {
+                                UltimaStorageManager.setCategoryTimestamp(category, cloudMeta.ts)
                             }
+                        }
+
+                        if (hash != cloudHash && isBackup) {
+                            Log.d(TAG, "Merged data different from cloud for ${category.key}, queuing push")
+                            categoriesToPush[category] = Pair(data, hash)
                         }
                     }
                 }
@@ -857,7 +791,7 @@ class UltimaPlugin : Plugin() {
         // Batch push all categories that need pushing
         if (categoriesToPush.isNotEmpty()) {
             lastPushTimestamp = System.currentTimeMillis()
-            val pushed = UltimaSettingsSyncUtils.pushCategories(appContext, categoriesToPush)
+            val pushed = UltimaSettingsSyncUtils.pushCategories(categoriesToPush)
             lastPushTimestamp = System.currentTimeMillis()
             Log.d(TAG, "Batch pushed ${pushed.size}/${categoriesToPush.size} categories in mergeAndSyncAll")
             val failed = categoriesToPush.keys - pushed

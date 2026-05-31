@@ -2,7 +2,6 @@ package com.phisher98
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.lagradost.cloudstream3.CloudStreamApp.Companion.context
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -84,25 +83,24 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
 
         return try {
             if (request.name == "watch_sync") {
-                val ctx = context ?: return null
                 val homeSections = ArrayList<HomePageList>()
 
                 try {
-                    val payload = UltimaSettingsSyncUtils.fetchCategory(ctx, SyncCategory.RESUME_WATCHING)
+                    val payload = UltimaSettingsSyncUtils.fetchCategory(SyncCategory.RESUME_WATCHING)
                     if (payload != null && payload.data.isNotBlank()) {
                         val backupFile = try {
                             mapper.readValue<BackupFile>(payload.data)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             null
                         }
 
                         if (backupFile != null) {
                             val resumeWatchingKey = backupFile.datastore.string?.keys?.find { it.contains("result_resume_watching") }
-                            val resumeWatchingJson = resumeWatchingKey?.let { backupFile.datastore.string?.get(it) }
+                            val resumeWatchingJson = resumeWatchingKey?.let { backupFile.datastore.string[it] }
                             val resumeWatchingList = resumeWatchingJson?.let {
                                 try {
                                     mapper.readValue<List<com.lagradost.cloudstream3.utils.DataStoreHelper.ResumeWatchingResult>>(it)
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     null
                                 }
                             }
@@ -151,7 +149,7 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     }
 
 
-    override suspend fun search(query: String): List<SearchResponse>? {
+    override suspend fun search(query: String): List<SearchResponse> {
         val enabledSections = mainPage
             .filter { !it.name.equals("watch_sync", ignoreCase = true) }
             .mapNotNull {

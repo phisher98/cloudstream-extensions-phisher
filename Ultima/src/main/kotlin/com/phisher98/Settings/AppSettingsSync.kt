@@ -1,7 +1,6 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -15,10 +14,7 @@ import androidx.lifecycle.coroutineScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,7 +56,7 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val settings = getLayout("app_settings_sync", inflater, container)
         val context = requireContext()
 
@@ -379,6 +375,7 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
         return settings
     }
 
+    @SuppressLint("SetTextI18n")
     private fun updateLastSyncInfo(rootView: View) {
         val infoView = rootView.findView<TextView>("last_sync_info")
         val sb = StringBuilder()
@@ -398,12 +395,13 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
         }
     }
 
+    @SuppressLint("UseSwitchCompatOrMaterialCode", "SetTextI18n")
     private suspend fun refreshDevicesList(rootView: View, inflater: LayoutInflater, container: ViewGroup?) {
         val devicesListLayout = rootView.findView<LinearLayout>("devices_list")
         devicesListLayout.removeAllViews()
 
         val creds = sm.appSettingsSyncCreds ?: return
-        val devices = UltimaSettingsSyncUtils.fetchDevices(requireContext()) ?: return
+        val devices = UltimaSettingsSyncUtils.fetchDevices() ?: return
 
         devices.forEach { device ->
             val isCurrent = device.deviceId == creds.deviceId

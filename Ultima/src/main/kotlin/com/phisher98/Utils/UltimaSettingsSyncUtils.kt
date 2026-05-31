@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.provider.Settings
@@ -14,6 +15,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Dispatchers
 import java.security.MessageDigest
 import java.util.UUID
+import android.util.Base64
+import java.io.ByteArrayOutputStream
+import java.io.ByteArrayInputStream
+import java.util.zip.GZIPOutputStream
+import java.util.zip.GZIPInputStream
 
 data class AppSettingsSyncCreds(
     @param:JsonProperty("useCustomDatabase") var useCustomDatabase: Boolean = false,
@@ -65,16 +71,6 @@ data class AppSettingsSyncCreds(
 
     fun isLoggedIn(): Boolean {
         return !syncKey.isNullOrEmpty()
-    }
-
-    fun isCategoryEnabled(category: SyncCategory): Boolean {
-        return when (category) {
-            SyncCategory.EXTENSIONS -> syncExtensions
-            SyncCategory.BOOKMARKS -> syncBookmarks
-            SyncCategory.RESUME_WATCHING -> syncResumeWatching
-            SyncCategory.SEARCH_HISTORY -> syncSearchHistory
-            SyncCategory.SETTINGS -> syncSettings
-        }
     }
 
     fun isBackupEnabled(category: SyncCategory): Boolean {
@@ -137,10 +133,6 @@ enum class SyncCategory(val key: String) {
     BOOKMARKS("bookmarks"),
     RESUME_WATCHING("resume_watching"),
     SEARCH_HISTORY("search_history");
-
-    companion object {
-        fun fromKey(key: String): SyncCategory? = entries.find { it.key == key }
-    }
 }
 
 data class SyncCategoryMeta(
@@ -200,29 +192,31 @@ data class FirebaseSharedData(
 
 object UltimaSettingsSyncUtils {
     private const val TAG = "UltimaSync"
+    private const val COMPRESSED_PREFIX = "gz:"
 
+    private fun compressData(data: String): String {
+        val bos = ByteArrayOutputStream()
+        GZIPOutputStream(bos).use { gz ->
+            gz.write(data.toByteArray(Charsets.UTF_8))
+        }
+        return COMPRESSED_PREFIX + Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP)
+    }
+
+    private fun decompressData(data: String): String {
+        if (!data.startsWith(COMPRESSED_PREFIX)) return data
+        val compressed = Base64.decode(data.removePrefix(COMPRESSED_PREFIX), Base64.NO_WRAP)
+        val bis = ByteArrayInputStream(compressed)
+        return GZIPInputStream(bis).bufferedReader(Charsets.UTF_8).readText()
+    }
+
+    @SuppressLint("HardwareIds")
     fun getDeviceId(packageName: String, context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         if (!androidId.isNullOrEmpty()) {
             return md5(packageName + androidId)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                @Suppress("MissingPermission")
-                val serialNumber = Build.getSerial()
-                if (!serialNumber.isNullOrEmpty()) {
-                    return md5(packageName + serialNumber)
-                }
-            } catch (_: SecurityException) {
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            val serialNumber = Build.SERIAL
-            if (!serialNumber.isNullOrEmpty() && serialNumber != "unknown") {
-                return md5(packageName + serialNumber)
-            }
-        }
 
+        // ANDROID_ID is null (very rare). Fallback to device info hash.
         val deviceInfo = "${Build.BRAND}_${Build.MODEL}_${Build.DEVICE}"
         return md5(packageName + UUID.nameUUIDFromBytes(deviceInfo.toByteArray()).toString())
     }
@@ -239,7 +233,7 @@ object UltimaSettingsSyncUtils {
 
     // --- v2 Manifest/Category API ---
 
-    suspend fun fetchManifest(context: Context): SyncManifest? {
+    suspend fun fetchManifest(): SyncManifest? {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
         if (!creds.isLoggedIn()) return null
 
@@ -257,7 +251,7 @@ object UltimaSettingsSyncUtils {
         }
     }
 
-    suspend fun pushManifest(context: Context, manifest: SyncManifest): Boolean {
+    suspend fun pushManifest(manifest: SyncManifest): Boolean {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
         if (!creds.isLoggedIn()) return false
 
@@ -271,7 +265,7 @@ object UltimaSettingsSyncUtils {
         }
     }
 
-    suspend fun fetchCategory(context: Context, category: SyncCategory): SyncCategoryPayload? {
+    suspend fun fetchCategory(category: SyncCategory): SyncCategoryPayload? {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
         if (!creds.isLoggedIn()) return null
 
@@ -281,7 +275,8 @@ object UltimaSettingsSyncUtils {
             if (res.code == 200) {
                 val body = res.text
                 if (body.isEmpty() || body == "null") return null
-                mapper.readValue<SyncCategoryPayload>(body)
+                val payload = mapper.readValue<SyncCategoryPayload>(body)
+                return payload.copy(data = decompressData(payload.data))
             } else null
         } catch (e: Exception) {
             Log.e(TAG, "fetchCategory(${category.key}) failed: ${e.message}")
@@ -297,7 +292,6 @@ object UltimaSettingsSyncUtils {
      * @return set of categories that were successfully pushed
      */
     suspend fun pushCategories(
-        context: Context,
         categoryData: Map<SyncCategory, Pair<String, String>>
     ): Set<SyncCategory> {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return emptySet()
@@ -315,12 +309,14 @@ object UltimaSettingsSyncUtils {
                     async(Dispatchers.IO) {
                         try {
                             val catUrl = "${creds.activeUrl}sync/${creds.syncKey}/categories/${category.key}.json"
-                            val payload = SyncCategoryPayload(dataPair.first, now, deviceName)
+                            val compressedData = compressData(dataPair.first)
+                            val payload = SyncCategoryPayload(compressedData, now, deviceName)
+                            Log.d(TAG, "Push ${category.key}: raw=${dataPair.first.length} chars, compressed=${compressedData.length} chars")
                             val catRes = app.put(catUrl, json = payload)
                             if (catRes.code in 200..299) {
                                 category to true
                             } else {
-                                Log.e(TAG, "pushCategories: ${category.key} failed HTTP ${catRes.code}")
+                                Log.e(TAG, "pushCategories: ${category.key} failed HTTP ${catRes.code}: ${catRes.text.take(200)}")
                                 category to false
                             }
                         } catch (e: Exception) {
@@ -336,14 +332,14 @@ object UltimaSettingsSyncUtils {
             if (successfulCategories.isEmpty()) return emptySet()
 
             // 2. Single manifest read-modify-write for all successful categories
-            val currentManifest = fetchManifest(context) ?: SyncManifest()
+            val currentManifest = fetchManifest() ?: SyncManifest()
             var updatedManifest = currentManifest
             for (category in successfulCategories) {
                 val hash = categoryData[category]?.second ?: ""
                 val meta = SyncCategoryMeta(now, hash, deviceName)
                 updatedManifest = updatedManifest.withUpdated(category, meta)
             }
-            pushManifest(context, updatedManifest)
+            pushManifest(updatedManifest)
 
             // 3. Single device status update
             val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
@@ -358,7 +354,7 @@ object UltimaSettingsSyncUtils {
                 UltimaStorageManager.setCategoryHash(category, hash)
                 
                 try {
-                    val backupFile = mapper.readValue<com.phisher98.BackupFile>(data)
+                    val backupFile = mapper.readValue<BackupFile>(data)
                     val keys = UltimaBackupUtils.getBackupFileKeys(backupFile)
                     UltimaStorageManager.setCategorySyncedKeys(category, keys)
                 } catch (e: Exception) {
@@ -374,14 +370,9 @@ object UltimaSettingsSyncUtils {
         return successfulCategories
     }
 
-    suspend fun pushCategory(context: Context, category: SyncCategory, data: String, hash: String): Boolean {
-        val result = pushCategories(context, mapOf(category to Pair(data, hash)))
-        return result.contains(category)
-    }
-
     // --- Legacy v1 API (kept for migration + device list) ---
 
-    suspend fun fetchDevices(context: Context): List<FirebaseDevice>? {
+    suspend fun fetchDevices(): List<FirebaseDevice>? {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
         if (!creds.isLoggedIn()) return null
 
@@ -394,10 +385,10 @@ object UltimaSettingsSyncUtils {
                 val map = mapper.readValue<Map<String, FirebaseDevice>>(body)
                 map.values.toList()
             } else null
-        } catch (e: Exception) { null }
+        } catch (_: Exception) { null }
     }
 
-    suspend fun fetchSharedData(context: Context): FirebaseSharedData? {
+    suspend fun fetchSharedData(): FirebaseSharedData? {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
         if (!creds.isLoggedIn()) return null
 
@@ -409,10 +400,10 @@ object UltimaSettingsSyncUtils {
                 if (body.isEmpty() || body == "null") return null
                 mapper.readValue<FirebaseSharedData>(body)
             } else null
-        } catch (e: Exception) { null }
+        } catch (_: Exception) { null }
     }
 
-    suspend fun deleteSharedData(context: Context): Boolean {
+    suspend fun deleteSharedData(): Boolean {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
         if (!creds.isLoggedIn()) return false
 
@@ -420,35 +411,7 @@ object UltimaSettingsSyncUtils {
             val url = "${creds.activeUrl}sync/${creds.syncKey}/shared_data.json"
             val res = app.delete(url)
             res.code in 200..299
-        } catch (e: Exception) { false }
-    }
-
-    suspend fun pushSharedData(context: Context, backupData: String, timestamp: Long): Pair<Boolean, String?> {
-        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false to "Credentials not found"
-        if (!creds.isLoggedIn()) return false to "Not logged in"
-
-        return try {
-            val sharedUrl = "${creds.activeUrl}sync/${creds.syncKey}/shared_data.json"
-            val shared = FirebaseSharedData(timestamp, backupData, creds.deviceName ?: "Unknown Device")
-            val sharedRes = app.put(sharedUrl, json = shared)
-
-            val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
-            val device = FirebaseDevice(creds.deviceName ?: "Unknown Device", creds.deviceId ?: "", timestamp)
-            app.put(deviceUrl, json = device)
-
-            if (sharedRes.code in 200..299) {
-                true to "Sync success"
-            } else {
-                false to "Sync failed with code ${sharedRes.code}"
-            }
-        } catch (e: Exception) {
-            false to e.message
-        }
-    }
-
-    suspend fun syncThisDevice(context: Context, backupData: String): Pair<Boolean, String?> {
-        val now = System.currentTimeMillis()
-        return pushSharedData(context, backupData, now)
+        } catch (_: Exception) { false }
     }
 
     suspend fun deregisterThisDevice(): Pair<Boolean, String?> {
