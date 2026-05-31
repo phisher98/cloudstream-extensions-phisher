@@ -36,7 +36,7 @@ class Animecloud : MainAPI() {
         "ListAnimesByViewCount" to "Trending",
         "ListAnimesByGenre|Action" to "Action",
         "ListAnimesByGenre|Drama" to "Drama",
-        "ListAnimesByGenre|Comedy" to "Comedy",
+        "ListAnimesByGenre|Scifi" to "Scifi",
         "ListAnimesByGenre|Mystery" to "Mystery",
         "ListAnimesByGenre|Romanze" to "Romanze",
         "ListAnimesByGenre|Abenteuer" to "Abenteuer",
