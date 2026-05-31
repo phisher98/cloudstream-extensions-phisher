@@ -18,7 +18,6 @@ import kotlinx.coroutines.sync.withPermit
 class AnimePahe : MainAPI() {
     companion object {
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        private const val Proxy="https://animepaheproxy.phisheranimepahe.workers.dev/?url="
         //var cookies: Map<String, String> = mapOf()
         private fun getType(t: String): TvType {
             return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
@@ -39,7 +38,7 @@ class AnimePahe : MainAPI() {
     )
 
     override val mainPage =
-        listOf(MainPageData("Latest Releases", "$Proxy$mainUrl/api?m=airing&page=", true))
+        listOf(MainPageData("Latest Releases", "$mainUrl/api?m=airing&page=", true))
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         data class Data(
@@ -100,7 +99,7 @@ class AnimePahe : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$Proxy$mainUrl/api?m=search&l=8&q=$query"
+        val url = "$mainUrl/api?m=search&l=8&q=$query"
         val headers = mapOf("referer" to "$mainUrl/","Cookie" to "__ddg2_=1234567890")
 
         val req = app.get(url, headers = headers).text
@@ -152,13 +151,13 @@ class AnimePahe : MainAPI() {
         private val headers = mapOf("Cookie" to "__ddg2_=1234567890")
         suspend fun getUrl(): String? {
             return if (is_play_page) {
-                "$Proxy$mainUrl/play/${session}/${episode_session}"
+                "$mainUrl/play/${session}/${episode_session}"
             } else {
-                val url = "$Proxy$mainUrl/api?m=release&id=${session}&sort=episode_asc&page=${page + 1}"
+                val url = "$mainUrl/api?m=release&id=${session}&sort=episode_asc&page=${page + 1}"
                 val jsonResponse = app.get(url,headers=headers).parsedSafe<AnimePaheAnimeData>() ?: return null
                 val episode = jsonResponse.data.firstOrNull { it.episode == episode_num }?.session
                     ?: return null
-                "$Proxy$mainUrl/play/${session}/${episode}"
+                "$mainUrl/play/${session}/${episode}"
             }
         }
     }
@@ -172,7 +171,7 @@ class AnimePahe : MainAPI() {
         val semaphore = Semaphore(5) // Limit to 5 concurrent requests (adjust based on server capability)
 
         try {
-            val uri = "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$mainUrl/api?m=release&id=$session&sort=episode_asc&page=1"
+            val uri = "$mainUrl/api?m=release&id=$session&sort=episode_asc&page=1"
             val req = app.get(uri, headers = headers).text
             val data = parseJson<AnimePaheAnimeData>(req)
 
@@ -273,7 +272,7 @@ class AnimePahe : MainAPI() {
                     data.session
                 }
             } ?: return@safeAsync null
-            val html = app.get("$Proxy$mainUrl/anime/$session",headers=headers).text
+            val html = app.get("$mainUrl/anime/$session",headers=headers).text
             val doc = Jsoup.parse(html)
             val japTitle = doc.selectFirst("h2.japanese")?.text()
             val animeTitle = doc.selectFirst("span.sr-only.unselectable")?.text()

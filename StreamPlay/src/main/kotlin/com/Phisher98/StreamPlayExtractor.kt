@@ -757,12 +757,12 @@ object StreamPlayExtractor : StreamPlay() {
         val isMovie = dubtype == "Movie"
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
 
-        val id = safeGet("https://animepaheproxy.phisheranimepahe.workers.dev/?url=${url.replace(".si",".org")}", headers)
+        val id = safeGet(url.replace(".si",".com"), headers)
             .document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
 
         val animeData = safeGet(
-            "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_asc&page=1",
+            "$animepaheAPI/api?m=release&id=$id&sort=episode_asc&page=1",
             headers
         ).parsedSafe<animepahe>()?.data.orEmpty()
 
@@ -771,7 +771,7 @@ object StreamPlayExtractor : StreamPlay() {
         val session = animeData[targetIndex].session
 
         val document = safeGet(
-            "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/play/$id/$session",
+            "$animepaheAPI/play/$id/$session",
             headers
         ).document
 
