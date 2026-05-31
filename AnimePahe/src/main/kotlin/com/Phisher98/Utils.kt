@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -34,7 +35,7 @@ suspend fun loadCustomExtractor(
             callback.invoke(
                 newExtractorLink(
                     name ?: link.source,
-                    name ?: link.name,
+                    link.name,
                     link.url,
                 ) {
                     this.quality = when {
@@ -57,10 +58,21 @@ class Kwik : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val res = app.get(url,referer="${AnimePaheProviderPlugin.currentAnimepaheServer}/")
-        val script =
-            res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
+
+        val title = res.document.title()
+
+        val script = res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
+
         val unpacked = getAndUnpack(script ?: return)
         val m3u8 =Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?:""
+
+        val fileName = title.substringBeforeLast(".mp4") + ".mp4"
+
+        val mp4Url = m3u8
+            .replace("/stream/", "/mp4/")
+            .substringBeforeLast("/")
+            .let { "$it?file=${java.net.URLEncoder.encode(fileName, "UTF-8")}" }
+
         callback.invoke(
             newExtractorLink(
                 name,
@@ -69,8 +81,24 @@ class Kwik : ExtractorApi() {
                 INFER_TYPE
             ) {
                 this.referer = mainUrl
-                this.quality = getQualityFromName("")
+                this.quality = getQualityFromName(title)
                 this.headers= mapOf("origin" to mainUrl)
+            }
+        )
+
+        callback(
+            newExtractorLink(
+                name,
+                "$name [Download]",
+                mp4Url,
+                ExtractorLinkType.VIDEO
+            ) {
+                this.referer = url
+                this.quality = getQualityFromName(fileName)
+                this.headers = mapOf(
+                    "Referer" to url,
+                    "Origin" to mainUrl
+                )
             }
         )
     }

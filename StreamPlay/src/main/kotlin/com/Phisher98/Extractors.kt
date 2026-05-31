@@ -1385,16 +1385,33 @@ open class Driveseed : ExtractorApi() {
 
 
 class Kwik : ExtractorApi() {
-    override val name            = "Kwik"
-    override val mainUrl         = "https://kwik.cx"
+    override val name = "Kwik"
+    override val mainUrl = "https://kwik.cx"
     override val requiresReferer = true
 
-    override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
-        val res = app.get(url,referer="${animepaheAPI}/")
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val res = app.get(url, referer = "${animepaheAPI}/")
+        val title = res.document.title()
+
         val script =
             res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = getAndUnpack(script ?: return)
-        val m3u8 =Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?:""
+        val m3u8 =
+            Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?: ""
+
+        val fileName = title.substringBeforeLast(".mp4") + ".mp4"
+
+        val mp4Url = m3u8
+            .replace("/stream/", "/mp4/")
+            .substringBeforeLast("/")
+            .let { "$it?file=${URLEncoder.encode(fileName, "UTF-8")}" }
+
+
         callback.invoke(
             newExtractorLink(
                 name,
@@ -1404,7 +1421,23 @@ class Kwik : ExtractorApi() {
             ) {
                 this.referer = mainUrl
                 this.quality = getQualityFromName(referer)
-                this.headers= mapOf("origin" to mainUrl)
+                this.headers = mapOf("origin" to mainUrl)
+            }
+        )
+
+        callback(
+            newExtractorLink(
+                name,
+                "$name [Download]",
+                mp4Url,
+                ExtractorLinkType.VIDEO
+            ) {
+                this.referer = url
+                this.quality = getQualityFromName(fileName)
+                this.headers = mapOf(
+                    "Referer" to url,
+                    "Origin" to mainUrl
+                )
             }
         )
     }
