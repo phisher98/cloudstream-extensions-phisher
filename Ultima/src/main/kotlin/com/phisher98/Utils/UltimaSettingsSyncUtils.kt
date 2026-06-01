@@ -284,10 +284,23 @@ object UltimaSettingsSyncUtils {
         }
     }
 
+    suspend fun registerDevice(): Boolean {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
+        if (!creds.isLoggedIn()) return false
+        return try {
+            val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
+            val device = FirebaseDevice(creds.deviceName ?: "Unknown", creds.deviceId ?: "", System.currentTimeMillis())
+            val res = app.put(deviceUrl, json = device)
+            res.code in 200..299
+        } catch (e: Exception) {
+            Log.e(TAG, "registerDevice failed: ${e.message}")
+            false
+        }
+    }
+
     /**
      * Batch push multiple categories in parallel.
-     * Uploads category payloads concurrently, then does a single manifest read-modify-write
-     * and single device status update.
+     * Uploads category payloads concurrently, then does a single manifest read-modify-write.
      * @param categoryData map of SyncCategory to Pair(jsonData, hash)
      * @return set of categories that were successfully pushed
      */
@@ -340,11 +353,6 @@ object UltimaSettingsSyncUtils {
                 updatedManifest = updatedManifest.withUpdated(category, meta)
             }
             pushManifest(updatedManifest)
-
-            // 3. Single device status update
-            val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
-            val device = FirebaseDevice(deviceName, creds.deviceId ?: "", now)
-            app.put(deviceUrl, json = device)
 
             // 4. Save local timestamps and hashes for successful categories
             for (category in successfulCategories) {

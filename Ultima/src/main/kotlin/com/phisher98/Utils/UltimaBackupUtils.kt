@@ -26,6 +26,14 @@ import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.mapper
 import java.security.MessageDigest
 import androidx.core.content.edit
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+
+val backupMapper = jacksonObjectMapper().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+
+fun BackupFile.toJsonSorted(): String {
+    return backupMapper.writeValueAsString(this)
+}
 
 
 data class BackupVars(
@@ -692,21 +700,16 @@ object UltimaBackupUtils {
         }
     }
 
-    fun getKeyTimestamp(
+     private fun getSpecificKeyTimestamp(
         key: String,
         category: SyncCategory,
-        localStringMap: Map<String, String>?,
-        cloudStringMap: Map<String, String>?
+        stringMap: Map<String, String>?
     ): Long {
+        if (stringMap == null) return 0L
         // If the key is a string key that directly contains a timestamp, extract it
-        val directLocalVal = localStringMap?.get(key)
-        if (directLocalVal != null) {
-            val ts = extractTimestamp(directLocalVal)
-            if (ts > 0L) return ts
-        }
-        val directCloudVal = cloudStringMap?.get(key)
-        if (directCloudVal != null) {
-            val ts = extractTimestamp(directCloudVal)
+        val directVal = stringMap[key]
+        if (directVal != null) {
+            val ts = extractTimestamp(directVal)
             if (ts > 0L) return ts
         }
 
@@ -721,27 +724,16 @@ object UltimaBackupUtils {
         }
 
         for (relKey in relatedKeys) {
-            val localVal = localStringMap?.get(relKey)
-            if (localVal != null) {
-                val ts = extractTimestamp(localVal)
-                if (ts > 0L) return ts
-            }
-            val cloudVal = cloudStringMap?.get(relKey)
-            if (cloudVal != null) {
-                val ts = extractTimestamp(cloudVal)
+            val v = stringMap[relKey]
+            if (v != null) {
+                val ts = extractTimestamp(v)
                 if (ts > 0L) return ts
             }
         }
 
         // Fuzzy match for video_pos_dur if needed
         if (category == SyncCategory.RESUME_WATCHING) {
-            localStringMap?.forEach { (k, v) ->
-                if (k.contains("video_pos_dur") && k.contains("/$id")) {
-                    val ts = extractTimestamp(v)
-                    if (ts > 0L) return ts
-                }
-            }
-            cloudStringMap?.forEach { (k, v) ->
+            stringMap.forEach { (k, v) ->
                 if (k.contains("video_pos_dur") && k.contains("/$id")) {
                     val ts = extractTimestamp(v)
                     if (ts > 0L) return ts
@@ -757,6 +749,7 @@ object UltimaBackupUtils {
         local: Map<String, T>?,
         cloud: Map<String, T>?,
         localCategoryTs: Long,
+        cloudPayloadTs: Long,
         localStrings: Map<String, String>?,
         cloudStrings: Map<String, String>?
     ): Map<String, T>? {
@@ -776,7 +769,7 @@ object UltimaBackupUtils {
                 if (!inLastSync) {
                     true
                 } else {
-                    val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                    val itemTs = getSpecificKeyTimestamp(key, category, cloudStrings)
                     itemTs > localCategoryTs
                 }
             }
@@ -789,7 +782,7 @@ object UltimaBackupUtils {
                 if (!inLastSync) {
                     true
                 } else {
-                    val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                    val itemTs = getSpecificKeyTimestamp(key, category, localStrings)
                     itemTs > localCategoryTs
                 }
             }
@@ -801,25 +794,51 @@ object UltimaBackupUtils {
         for ((key, localVal) in local) {
             val cloudVal = cloud[key]
             if (cloudVal != null) {
-                val localTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
-                val cloudTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
-                if (cloudTs > localTs) {
-                    merged[key] = cloudVal
+                val localTs = getSpecificKeyTimestamp(key, category, localStrings)
+                val cloudTs = getSpecificKeyTimestamp(key, category, cloudStrings)
+                
+                if (localTs > 0L || cloudTs > 0L) {
+                    // Use individual timestamps if available (Dynamic Categories)
+                    if (cloudTs > localTs) {
+                        merged[key] = cloudVal
+                    } else {
+                        merged[key] = localVal
+                    }
                 } else {
-                    merged[key] = localVal
+                    // Fallback to category payload timestamps (Static Categories)
+                    if (cloudPayloadTs > localCategoryTs) {
+                        merged[key] = cloudVal
+                    } else {
+                        merged[key] = localVal
+                    }
                 }
             } else {
-                if (localCategoryTs == 0L || !isDynamicCategory(category) || lastSyncedKeys.isEmpty()) {
-                    merged[key] = localVal
-                } else {
-                    val inLastSync = lastSyncedKeys.contains(key)
-                    if (!inLastSync) {
+                // Key is in local but NOT in cloud
+                val itemTs = getSpecificKeyTimestamp(key, category, localStrings)
+                if (itemTs > 0L) {
+                    // Dynamic category logic (item has timestamp)
+                    if (localCategoryTs == 0L || lastSyncedKeys.isEmpty()) {
                         merged[key] = localVal
                     } else {
-                        val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
-                        if (itemTs > localCategoryTs) {
+                        val inLastSync = lastSyncedKeys.contains(key)
+                        if (!inLastSync) {
                             merged[key] = localVal
+                        } else {
+                            if (itemTs > localCategoryTs) {
+                                merged[key] = localVal
+                            }
                         }
+                    }
+                } else {
+                    // Static category logic (no individual timestamp)
+                    if (localCategoryTs == 0L) {
+                        merged[key] = localVal
+                    } else if (cloudPayloadTs > localCategoryTs) {
+                        // Cloud was updated more recently by another device and doesn't have this key,
+                        // which means the other device DELETED it! So we drop it.
+                    } else {
+                        // Cloud hasn't been updated since our last sync, so this is a new local key
+                        merged[key] = localVal
                     }
                 }
             }
@@ -828,17 +847,30 @@ object UltimaBackupUtils {
         // 2. Keys present only in cloud
         for ((key, cloudVal) in cloud) {
             if (!local.containsKey(key)) {
-                if (localCategoryTs == 0L || !isDynamicCategory(category) || lastSyncedKeys.isEmpty()) {
-                    merged[key] = cloudVal
-                } else {
-                    val inLastSync = lastSyncedKeys.contains(key)
-                    if (!inLastSync) {
+                val itemTs = getSpecificKeyTimestamp(key, category, cloudStrings)
+                if (itemTs > 0L) {
+                    // Dynamic category logic
+                    if (localCategoryTs == 0L || lastSyncedKeys.isEmpty()) {
                         merged[key] = cloudVal
                     } else {
-                        val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
-                        if (itemTs > localCategoryTs) {
+                        val inLastSync = lastSyncedKeys.contains(key)
+                        if (!inLastSync) {
                             merged[key] = cloudVal
+                        } else {
+                            if (itemTs > localCategoryTs) {
+                                merged[key] = cloudVal
+                            }
                         }
+                    }
+                } else {
+                    // Static category logic
+                    if (localCategoryTs == 0L) {
+                        merged[key] = cloudVal
+                    } else if (cloudPayloadTs > localCategoryTs) {
+                        // Cloud is newer and has a key we don't have, so we should accept it
+                        merged[key] = cloudVal
+                    } else {
+                        // We must have deleted this key locally since the last sync
                     }
                 }
             }
@@ -847,7 +879,7 @@ object UltimaBackupUtils {
         return merged
     }
 
-    fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?, localCategoryTs: Long): BackupFile? {
+    fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?, localCategoryTs: Long, cloudPayloadTs: Long): BackupFile? {
         if (local == null) return cloud
         if (cloud == null) return local
 
@@ -861,19 +893,19 @@ object UltimaBackupUtils {
         val category = sampleKey?.let { classifyKey(it) } ?: SyncCategory.SETTINGS
 
         return BackupFile(
-            datastore = mergeBackupVars(local.datastore, cloud.datastore, localCategoryTs, category),
-            settings = mergeBackupVars(local.settings, cloud.settings, localCategoryTs, category)
+            datastore = mergeBackupVars(local.datastore, cloud.datastore, localCategoryTs, cloudPayloadTs, category),
+            settings = mergeBackupVars(local.settings, cloud.settings, localCategoryTs, cloudPayloadTs, category)
         )
     }
 
-    private fun mergeBackupVars(local: BackupVars, cloud: BackupVars, localCategoryTs: Long, category: SyncCategory): BackupVars {
+    private fun mergeBackupVars(local: BackupVars, cloud: BackupVars, localCategoryTs: Long, cloudPayloadTs: Long, category: SyncCategory): BackupVars {
         return BackupVars(
-            bool = mergeCategoryMap(category, local.bool, cloud.bool, localCategoryTs, local.string, cloud.string),
-            int = mergeCategoryMap(category, local.int, cloud.int, localCategoryTs, local.string, cloud.string),
-            float = mergeCategoryMap(category, local.float, cloud.float, localCategoryTs, local.string, cloud.string),
-            long = mergeCategoryMap(category, local.long, cloud.long, localCategoryTs, local.string, cloud.string),
-            string = mergeCategoryMap(category, local.string, cloud.string, localCategoryTs, local.string, cloud.string),
-            stringSet = mergeCategoryMap(category, local.stringSet, cloud.stringSet, localCategoryTs, local.string, cloud.string)
+            bool = mergeCategoryMap(category, local.bool, cloud.bool, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
+            int = mergeCategoryMap(category, local.int, cloud.int, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
+            float = mergeCategoryMap(category, local.float, cloud.float, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
+            long = mergeCategoryMap(category, local.long, cloud.long, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
+            string = mergeCategoryMap(category, local.string, cloud.string, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
+            stringSet = mergeCategoryMap(category, local.stringSet, cloud.stringSet, localCategoryTs, cloudPayloadTs, local.string, cloud.string)
         )
     }
 

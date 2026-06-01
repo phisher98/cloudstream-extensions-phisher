@@ -128,6 +128,7 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
 
                         activity?.lifecycle?.coroutineScope?.launch {
                             showToast("Credentials saved. Performing initial sync...")
+                            UltimaSettingsSyncUtils.registerDevice()
                             plugin.mergeAndSyncAllCategories(context)
                             showToast("Initial sync complete!")
                             refreshDevicesList(settings, inflater, container)
