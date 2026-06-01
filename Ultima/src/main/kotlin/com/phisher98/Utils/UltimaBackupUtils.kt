@@ -513,6 +513,10 @@ object UltimaBackupUtils {
         }
 
         val updatedPluginsList = mutableListOf<PluginData>()
+        val ultimaPlugin = currentLocalPlugins.find { it.internalName.equals("Ultima", ignoreCase = true) }
+        if (ultimaPlugin != null) {
+            updatedPluginsList.add(ultimaPlugin)
+        }
         val newlyDownloaded = mutableSetOf<String>()
         var downloadedAny = false
 
@@ -542,7 +546,6 @@ object UltimaBackupUtils {
                         if (localFile.exists() && localFile.length() > 0) {
                             Triple(plugin.copy(filePath = localFile.absolutePath), false, false)
                         } else {
-                            var downloaded = false
                             var resultPlugin: PluginData? = null
                             if (!targetUrl.isNullOrBlank()) {
                                 val downloadUrl = forceConvertRawGitUrl(targetUrl)
@@ -559,7 +562,6 @@ object UltimaBackupUtils {
                                             if (tempFile.exists() && tempFile.length() > 0) {
                                                 localFile.parentFile?.mkdirs()
                                                 tempFile.copyTo(localFile, overwrite = true)
-                                                downloaded = true
                                                 resultPlugin = plugin.copy(filePath = localFile.absolutePath, url = targetUrl)
                                             }
                                         }
@@ -577,7 +579,7 @@ object UltimaBackupUtils {
                             }
 
                             if (resultPlugin != null) {
-                                Triple(resultPlugin!!, true, true)
+                                Triple(resultPlugin, true, true)
                             } else {
                                 null
                             }
@@ -610,7 +612,7 @@ object UltimaBackupUtils {
 
         // Save updated PLUGINS_KEY
         val updatedJson = updatedPluginsList.toTypedArray().toJson()
-        context.getSharedPrefs().edit().putString("PLUGINS_KEY", updatedJson).apply()
+        context.getSharedPrefs().edit { putString("PLUGINS_KEY", updatedJson) }
         try {
             setKey("PLUGINS_KEY", updatedPluginsList.toTypedArray())
         } catch (_: Exception) {}
@@ -650,22 +652,6 @@ object UltimaBackupUtils {
         val editor: SharedPreferences.Editor = if (isEditingAppSettings) context.getDefaultSharedPrefs().edit() else context.getSharedPrefs().edit()
         return UltimaEditor(editor)
     }
-
-    // --- Legacy v1 methods (kept for migration) ---
-
-    @Suppress("UNCHECKED_CAST")
-    fun getBackup(context: Context?, resumeWatching: List<DataStoreHelper.ResumeWatchingResult>?): BackupFile? {
-        if (context == null) return null
-
-        val allData = context.getSharedPrefs().all.filter { it.key.isTransferable() }
-        val allSettings = context.getDefaultSharedPrefs().all.filter { it.key.isTransferable() }
-
-        return BackupFile(
-            datastore = buildBackupVars(allData),
-            settings = buildBackupVars(allSettings)
-        )
-    }
-
 
 
     fun getBackupFileKeys(backupFile: BackupFile): Set<String> {
@@ -861,10 +847,6 @@ object UltimaBackupUtils {
         return merged
     }
 
-    fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?): BackupFile? {
-        return mergeBackupFiles(local, cloud, 0L)
-    }
-
     fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?, localCategoryTs: Long): BackupFile? {
         if (local == null) return cloud
         if (cloud == null) return local
@@ -910,7 +892,7 @@ object UltimaBackupUtils {
             if (searchedAtMatch != null) {
                 return searchedAtMatch.groupValues[1].toLong()
             }
-        } catch (e: Exception) {}
+        } catch (_: Exception) {}
         return 0L
     }
 
