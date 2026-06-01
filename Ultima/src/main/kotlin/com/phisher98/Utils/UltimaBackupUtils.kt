@@ -751,7 +751,8 @@ object UltimaBackupUtils {
         localCategoryTs: Long,
         cloudPayloadTs: Long,
         localStrings: Map<String, String>?,
-        cloudStrings: Map<String, String>?
+        cloudStrings: Map<String, String>?,
+        isLocallyDirty: Boolean = false
     ): Map<String, T>? {
         if (local == null && cloud == null) return null
 
@@ -806,7 +807,7 @@ object UltimaBackupUtils {
                     }
                 } else {
                     // Fallback to category payload timestamps (Static Categories)
-                    if (cloudPayloadTs > localCategoryTs) {
+                    if (cloudPayloadTs > localCategoryTs && !isLocallyDirty) {
                         merged[key] = cloudVal
                     } else {
                         merged[key] = localVal
@@ -833,11 +834,12 @@ object UltimaBackupUtils {
                     // Static category logic (no individual timestamp)
                     if (localCategoryTs == 0L) {
                         merged[key] = localVal
-                    } else if (cloudPayloadTs > localCategoryTs) {
-                        // Cloud was updated more recently by another device and doesn't have this key,
-                        // which means the other device DELETED it! So we drop it.
+                    } else if (cloudPayloadTs > localCategoryTs && !isLocallyDirty && lastSyncedKeys.contains(key)) {
+                        // Cloud is newer AND we previously synced this key.
+                        // Since it's missing in cloud, the other device deleted it!
+                        // drop it
                     } else {
-                        // Cloud hasn't been updated since our last sync, so this is a new local key
+                        // Either cloud is older, locally dirty, or this is a brand new local key (not in lastSyncedKeys)
                         merged[key] = localVal
                     }
                 }
@@ -866,11 +868,11 @@ object UltimaBackupUtils {
                     // Static category logic
                     if (localCategoryTs == 0L) {
                         merged[key] = cloudVal
-                    } else if (cloudPayloadTs > localCategoryTs) {
+                    } else if (cloudPayloadTs > localCategoryTs && !isLocallyDirty) {
                         // Cloud is newer and has a key we don't have, so we should accept it
                         merged[key] = cloudVal
                     } else {
-                        // We must have deleted this key locally since the last sync
+                        // Cloud is older or local is dirty, drop it because it was deleted locally
                     }
                 }
             }
@@ -879,7 +881,7 @@ object UltimaBackupUtils {
         return merged
     }
 
-    fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?, localCategoryTs: Long, cloudPayloadTs: Long): BackupFile? {
+    fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?, localCategoryTs: Long, cloudPayloadTs: Long, isLocallyDirty: Boolean = false): BackupFile? {
         if (local == null) return cloud
         if (cloud == null) return local
 
@@ -893,19 +895,19 @@ object UltimaBackupUtils {
         val category = sampleKey?.let { classifyKey(it) } ?: SyncCategory.SETTINGS
 
         return BackupFile(
-            datastore = mergeBackupVars(local.datastore, cloud.datastore, localCategoryTs, cloudPayloadTs, category),
-            settings = mergeBackupVars(local.settings, cloud.settings, localCategoryTs, cloudPayloadTs, category)
+            datastore = mergeBackupVars(local.datastore, cloud.datastore, localCategoryTs, cloudPayloadTs, category, isLocallyDirty),
+            settings = mergeBackupVars(local.settings, cloud.settings, localCategoryTs, cloudPayloadTs, category, isLocallyDirty)
         )
     }
 
-    private fun mergeBackupVars(local: BackupVars, cloud: BackupVars, localCategoryTs: Long, cloudPayloadTs: Long, category: SyncCategory): BackupVars {
+    private fun mergeBackupVars(local: BackupVars, cloud: BackupVars, localCategoryTs: Long, cloudPayloadTs: Long, category: SyncCategory, isLocallyDirty: Boolean): BackupVars {
         return BackupVars(
-            bool = mergeCategoryMap(category, local.bool, cloud.bool, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
-            int = mergeCategoryMap(category, local.int, cloud.int, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
-            float = mergeCategoryMap(category, local.float, cloud.float, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
-            long = mergeCategoryMap(category, local.long, cloud.long, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
-            string = mergeCategoryMap(category, local.string, cloud.string, localCategoryTs, cloudPayloadTs, local.string, cloud.string),
-            stringSet = mergeCategoryMap(category, local.stringSet, cloud.stringSet, localCategoryTs, cloudPayloadTs, local.string, cloud.string)
+            bool = mergeCategoryMap(category, local.bool, cloud.bool, localCategoryTs, cloudPayloadTs, local.string, cloud.string, isLocallyDirty),
+            int = mergeCategoryMap(category, local.int, cloud.int, localCategoryTs, cloudPayloadTs, local.string, cloud.string, isLocallyDirty),
+            float = mergeCategoryMap(category, local.float, cloud.float, localCategoryTs, cloudPayloadTs, local.string, cloud.string, isLocallyDirty),
+            long = mergeCategoryMap(category, local.long, cloud.long, localCategoryTs, cloudPayloadTs, local.string, cloud.string, isLocallyDirty),
+            string = mergeCategoryMap(category, local.string, cloud.string, localCategoryTs, cloudPayloadTs, local.string, cloud.string, isLocallyDirty),
+            stringSet = mergeCategoryMap(category, local.stringSet, cloud.stringSet, localCategoryTs, cloudPayloadTs, local.string, cloud.string, isLocallyDirty)
         )
     }
 

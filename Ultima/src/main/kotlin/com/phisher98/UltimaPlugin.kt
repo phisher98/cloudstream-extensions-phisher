@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.DataStore.getDefaultSharedPrefs
 import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -659,7 +658,10 @@ class UltimaPlugin : Plugin() {
                 UltimaBackupUtils.restoreCategory(context, category, backupFile)
                 withContext(Dispatchers.Main) {
                     try {
-                        this@UltimaPlugin.activity?.recreate()
+                        val act = this@UltimaPlugin.activity
+                        if (act != null && act.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                            act.recreate()
+                        }
                     } catch (e: Throwable) {
                         Log.e(TAG, "Failed to recreate activity on settings sync: ${e.message}")
                     }
@@ -676,6 +678,7 @@ class UltimaPlugin : Plugin() {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return
         if (!creds.isLoggedIn()) return
 
+        val currentDirtyCategories = dirtyCategories.toSet()
         consumeDirtyCategories()
 
         // Fetch manifest once for all categories
@@ -770,7 +773,8 @@ class UltimaPlugin : Plugin() {
                 } else {
                     val localCategoryTs = UltimaStorageManager.getCategoryTimestamp(category)
                     val cloudPayloadTs = cloudPayload?.ts ?: 0L
-                    val mergedBackup = UltimaBackupUtils.mergeBackupFiles(localBackup, cloudBackup, localCategoryTs, cloudPayloadTs)
+                    val isLocallyDirty = currentDirtyCategories.contains(category)
+                    val mergedBackup = UltimaBackupUtils.mergeBackupFiles(localBackup, cloudBackup, localCategoryTs, cloudPayloadTs, isLocallyDirty)
                     if (mergedBackup != null) {
                         val data = mergedBackup.toJsonSorted()
                         val hash = UltimaBackupUtils.computeHash(data)
@@ -778,7 +782,6 @@ class UltimaPlugin : Plugin() {
                         val liveLocalData = localBackup.toJsonSorted()
                         val liveLocalHash = UltimaBackupUtils.computeHash(liveLocalData)
 
-                        val localHash = UltimaStorageManager.getCategoryHash(category)
                         val cloudMeta = manifest?.getMeta(category)
                         val cloudHash = cloudMeta?.hash ?: ""
 
