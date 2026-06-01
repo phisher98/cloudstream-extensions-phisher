@@ -798,6 +798,10 @@ class UltimaPlugin : Plugin() {
                             if (cloudMeta != null) {
                                 UltimaStorageManager.setCategoryTimestamp(category, cloudMeta.ts)
                             }
+
+                            // NEW: Update lastSyncedKeys when receiving cloud data
+                            val keys = UltimaBackupUtils.getBackupFileKeys(mergedBackup)
+                            UltimaStorageManager.setCategorySyncedKeys(category, keys)
                         }
 
                         if (hash != cloudHash && isBackup) {
