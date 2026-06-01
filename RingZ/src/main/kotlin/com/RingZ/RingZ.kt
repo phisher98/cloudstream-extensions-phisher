@@ -25,7 +25,6 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -53,12 +52,6 @@ class RingZ : MainAPI() {
 
     }
 
-    data class MainCategory(
-        val url: String,
-        val title: String,
-        val adult: Boolean? = false
-    )
-
     private fun defaultMainPage() = mainPageOf(
         *listOfNotNull(
             "$mainUrl/Nwm.json" to "Movies",
@@ -68,28 +61,76 @@ class RingZ : MainAPI() {
         ).toTypedArray()
     )
 
-    private suspend fun fetchMainPageFromGithub(): List<Pair<String, String>> {
-        val jsonUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/RingzCategories.json"
-        val resp = app.get(jsonUrl)
-        val body = resp.text
+    data class RemoteConfig(
+        val link1: String?,
+        val link2: String?,
+        val latest: String?,
+        val webseries: String?,
+        val anime: String?,
+        val desihub: String?
+    )
 
-        val categories = try {
-            AppUtils.parseJson<List<MainCategory>>(body)
-        } catch (_: Throwable) {
-            Log.e(name, "Failed to parse RingzCategories")
+    private suspend fun getRemoteConfig(): RemoteConfig? {
+        return try {
+            val responseText = app.get(base64Decode("aHR0cHM6Ly9tYWluYXBpLnlvbW92aWVzYXBrLmNvbS9y"), headers = mapOf(
+                "cf-access-client-id" to base64Decode("DQo4YjY2ZTdiMTFiYjZhODUxY2U4Njk4YzdkZDVmYTE3Yi5hY2Nlc3M="),
+                "cf-access-client-secret" to base64Decode("DQoxMDgwOGRkNTZkZWQyNmY4NTU4MjhlZWM5ZjA0ZGE5M2Y1OGJjZDgzNGVjYWM2MThmOWQ1YmM4N2U2MmJjYzMyDQo="),
+                "user-agent" to "Dart/3.8 (dart:io)"
+            )).text
+            val jsonArray = JSONArray(responseText)
+            
+            var selected: JSONObject? = null
+            var highestId = Long.MIN_VALUE
+
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val idNum = obj.optString("id", "").toLongOrNull()
+                if (idNum != null && idNum > highestId) {
+                    highestId = idNum
+                    selected = obj
+                }
+            }
+            if (selected == null && jsonArray.length() > 0) {
+                selected = jsonArray.getJSONObject(jsonArray.length() - 1)
+            }
+            if (selected == null) return null
+
+            RemoteConfig(
+                link1 = selected.optString("link1").takeIf { it.isNotBlank() },
+                link2 = selected.optString("link2").takeIf { it.isNotBlank() },
+                latest = selected.optString("latest").takeIf { it.isNotBlank() },
+                webseries = selected.optString("webseries").takeIf { it.isNotBlank() },
+                anime = selected.optString("anime").takeIf { it.isNotBlank() },
+                desihub = selected.optString("desihub").takeIf { it.isNotBlank() }
+            )
+        } catch (e: Exception) {
+            Log.e(name, "Failed to fetch remote config: ${e.message}")
             null
         }
+    }
 
-        return (categories ?: emptyList())
-            .filter { settingsForProvider.enableAdult || it.adult != true }
-            .map { cat ->
-                "$mainUrl/${cat.url}" to cat.title
+    private suspend fun fetchMainPageFromApi(): List<Pair<String, String>> {
+        val config = getRemoteConfig() ?: return emptyList()
+
+        val host = config.link1 ?: config.link2 ?: return emptyList()
+        val baseUrl = if (host.startsWith("http")) host else "https://$host"
+
+        return buildList {
+            config.latest?.let { add("$baseUrl$it" to "Movies") }
+            config.webseries?.let { add("$baseUrl$it" to "Web Series") }
+            config.anime?.let { add("$baseUrl$it" to "Anime") }
+
+            if (settingsForProvider.enableAdult) {
+                config.desihub?.let {
+                    add("$baseUrl$it" to "Adult (18+)")
+                }
             }
+        }
     }
 
     override val mainPage = runBlocking {
         try {
-            val pages = fetchMainPageFromGithub()
+            val pages = fetchMainPageFromApi()
             if (pages.isNotEmpty()) {
                 mainPageOf(*pages.toTypedArray())
             } else {
@@ -224,7 +265,7 @@ class RingZ : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val urls = try {
-            fetchMainPageFromGithub()
+            fetchMainPageFromApi()
         } catch (_: Throwable) {
             listOfNotNull(
                 "$mainUrl/Nwm.json" to "Movies",
@@ -332,8 +373,8 @@ class RingZ : MainAPI() {
             while (keys.hasNext()) {
                 val key = keys.next()
 
-                if (key.startsWith("eServer") || key == "eTape") {
-                    val serverBlock = seriesObj.getJSONObject(key)
+                val serverBlock = seriesObj.optJSONObject(key)
+                if (serverBlock != null && serverBlock.has("1")) {
                     val epKeys = serverBlock.keys()
 
                     while (epKeys.hasNext()) {
@@ -343,7 +384,8 @@ class RingZ : MainAPI() {
                         val list = episodeMap.getOrPut(epNum) { mutableListOf() }
 
                         val entry = JSONObject().apply {
-                            put("source", key)
+                            val niceKey = if (key.startsWith("e", ignoreCase = true)) key.drop(1) else key
+                            put("key", niceKey)
                             put("url", epUrl)
                             put("episode", epNum)
                         }
@@ -366,8 +408,8 @@ class RingZ : MainAPI() {
 
         return when (tvTag) {
             TvType.TvSeries, TvType.Anime -> {
-                val seriesResText =
-                    fetchJson(if (href.contains(mainUrl)) href else "$mainUrl/$href")
+                val fullUrl = if (href.startsWith("http", ignoreCase = true)) href else "$mainUrl/$href"
+                val seriesResText = fetchJson(fullUrl)
                 val webSeriesList = seriesResText.getJSONArray("webSeriesDataList")
                 val seriesObj = (0 until webSeriesList.length())
                     .map { webSeriesList.getJSONObject(it) }
@@ -390,7 +432,8 @@ class RingZ : MainAPI() {
             }
 
             else -> {
-                val movieResText = fetchJson("$mainUrl/$href")
+                val fullUrl = if (href.startsWith("http", ignoreCase = true)) href else "$mainUrl/$href"
+                val movieResText = fetchJson(fullUrl)
                 val allMovieDataList = movieResText.getJSONArray("AllMovieDataList")
                 val movie = (0 until allMovieDataList.length())
                     .map { allMovieDataList.getJSONObject(it) }
@@ -496,11 +539,30 @@ class RingZ : MainAPI() {
                 urlStr = valueStr
             }
 
-            val serverName =  "Server ${i + 1}"
+            val serverName = when (keyName?.lowercase()) {
+                "s1", "server1" -> "Server 1"
+                "s2", "server2" -> "Server 2"
+                "s3", "server3" -> "Server 3"
+                "s4", "server4" -> "Server 4"
+                "tape" -> "Tape"
+                "4s1" -> "480p Server 1"
+                "4s2" -> "480p Server 2"
+                "4s3" -> "480p Server 3"
+                "4s4" -> "480p Server 4"
+                "480p" -> "480p Server"
+                "1080p" -> "1080p Server"
+                "4k" -> "4K Server"
+                null -> "Server ${i + 1}"
+                else -> keyName.replaceFirstChar { it.uppercase() }
+            }
 
             val quality = inferQuality(urlStr, keyName, valueStr)
 
             val finalUrl = urlStr ?: continue
+            if (finalUrl.contains("mvslatest.ringzapk.in", ignoreCase = true)) continue
+            if (finalUrl.contains("yomoviesapk.com", ignoreCase = true)) continue
+            if (finalUrl.contains("ringzapidata", ignoreCase = true)) continue
+            if (finalUrl.contains("ringzmovies", ignoreCase = true)) continue
 
             callback.invoke(
                 newExtractorLink(
