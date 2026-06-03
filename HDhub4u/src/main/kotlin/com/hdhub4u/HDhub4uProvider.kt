@@ -38,7 +38,7 @@ import java.text.Normalizer
 
 class HDhub4uProvider : MainAPI() {
     override var mainUrl: String = runBlocking {
-        HDhub4uPlugin.getDomains()?.HDHUB4u ?: "https://hdhub4u.rehab"
+        HDhub4uPlugin.getDomains()?.HDHUB4u ?: "https://hdhub4u.glass"
     }
     override var name = "HDHub4U"
     override var lang = "hi"
@@ -105,7 +105,7 @@ class HDhub4uProvider : MainAPI() {
 
     override suspend fun search(query: String, page: Int): SearchResponseList {
         val response = app.get(
-            "https://search.hdhub4u.glass/collections/post/documents/search" +
+            "https://search.pingora.fyi/collections/post/documents/search" +
                     "?q=$query" +
                     "&query_by=post_title,category" +
                     "&query_by_weights=4,2" +
