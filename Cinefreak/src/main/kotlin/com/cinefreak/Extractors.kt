@@ -22,6 +22,99 @@ class Hubcloudone : HubCloud(){
     override var mainUrl = "https://hubcloud.one"
 }
 
+class CineCloud : ExtractorApi() {
+    override val name = "CineCloud"
+    override val mainUrl = "https://new5.cinecloud.site"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(url).document
+
+        val fileSize = doc
+            .select("tr")
+            .find {
+                it.selectFirst("td")
+                    ?.text()
+                    ?.contains("File Size", true) == true
+            }
+            ?.select("td.text-right")
+            ?.lastOrNull()
+            ?.text()
+            ?.trim()
+            .orEmpty()
+
+        doc.select("a[href]").forEach { a ->
+
+            val text = a.text().trim()
+
+            val baseUrl = getBaseUrl(url)
+
+            val href = a.attr("href").let {
+                if (it.startsWith("http")) it
+                else baseUrl + it
+            }
+
+            when {
+
+                text.contains("FAST CLOUD", true) ||
+                        text.contains("[FSL]", true) -> {
+
+                    callback(
+                        newExtractorLink(
+                            source = "[FSL]",
+                            name = "$name [FSL] $fileSize",
+                            url = href,
+                            type = INFER_TYPE
+                        ) {
+                            this.quality = getIndexQuality(referer)
+                        }
+                    )
+                }
+
+                text.contains("Cloud [Resumable]", true) -> {
+
+                    val generatedDoc = runCatching {
+                        app.get(href).document
+                    }.getOrNull() ?: return@forEach
+
+                    generatedDoc.select("a.download-now[href]")
+                        .forEach { dl ->
+
+                            val finalLink = dl.absUrl("href")
+                                .ifBlank { dl.attr("href") }
+
+                            callback(
+                                newExtractorLink(
+                                    source = "[ResumeCloud]",
+                                    name = "$name [ResumeCloud] $fileSize",
+                                    url = finalLink,
+                                    type = INFER_TYPE
+                                ) {
+                                    this.quality = getIndexQuality(referer)
+                                }
+                            )
+                        }
+                }
+
+                text.contains("Pixeldrain", true) -> {
+                    loadExtractor(
+                        href,
+                        mainUrl,
+                        subtitleCallback,
+                        callback
+                    )
+                }
+            }
+        }
+    }
+}
+
+
 class Hubdrive : ExtractorApi() {
     override val name = "Hubdrive"
     override val mainUrl = "https://hubdrive.space"

@@ -3,6 +3,7 @@ package com.cinefreak
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.utils.Qualities
+import java.net.URI
 
 fun cleanTitle(raw: String): String {
     val name = raw.substringBefore("(").trim()
@@ -54,4 +55,11 @@ data class VideoLocal(
 fun getIndexQuality(str: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
         ?: Qualities.Unknown.value
+}
+
+
+fun getBaseUrl(url: String): String {
+    return URI(url).let {
+        "${it.scheme}://${it.host}"
+    }
 }

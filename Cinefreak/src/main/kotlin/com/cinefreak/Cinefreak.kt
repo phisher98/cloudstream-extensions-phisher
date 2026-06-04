@@ -33,6 +33,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.getPostForm
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.runBlocking
@@ -129,8 +130,9 @@ open class Cinefreak : MainAPI() {
                 else -> TvType.Movie
             }
 
+            val poster = if (obj.i.contains(name, ignoreCase = true)) "$mainUrl${obj.i.replace(getBaseUrl(obj.i), "")}" else obj.i
             newMovieSearchResponse(obj.t, href, type) {
-                this.posterUrl = obj.i
+                this.posterUrl = poster
             }
         }.toNewSearchResponseList()
     }
@@ -513,10 +515,13 @@ open class Cinefreak : MainAPI() {
                         it.episode == firstEpisode
             }
 
-            val links = mutableMapOf<String, String>()
+            val links = mutableListOf<EpisodeLinkHrefs>()
 
-            card.select("div.download-links a").forEach { a ->
-                links[a.text().trim()] = a.attr("href").trim()
+            card.select("div.quality-grid a").forEach { a ->
+                links += EpisodeLinkHrefs(
+                    a.text().trim(),
+                    a.attr("href").trim()
+                )
             }
 
             val data = mapOf(
@@ -562,32 +567,22 @@ open class Cinefreak : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
 
-        val links = mutableMapOf<String, String>()
-        tryParseJson<Map<String, Any>>(data)
-            ?.get("links")
-            ?.let { map ->
-                (map as? Map<*, *>)?.forEach { (k, v) ->
-                    links[k.toString()] = v.toString()
-                }
-            }
+        val parsed = tryParseJson<Map<String, Any>>(data)
+            ?: return false
 
-        if (links.isEmpty()) {
-            tryParseJson<Map<String, String>>(data)
-                ?.forEach { (k, v) ->
-                    links[k] = v
-                }
-        }
+        val links = parsed["links"]
+            ?.toJson()
+            ?.let { tryParseJson<List<EpisodeLinkHrefs>>(it) }
+            ?: return false
 
-        if (links.isEmpty()) return false
-
-        links.forEach { (quality, raw) ->
+        links.forEach { link ->
+            if (links.isEmpty()) return false
 
             val decoded = runCatching {
                 base64Decode(
                     Regex("""id=([^&]+)""")
-                        .find(fixUrl(raw))
+                        .find(fixUrl(link.url))
                         ?.groupValues
                         ?.getOrNull(1)
                         ?: return@forEach
@@ -597,75 +592,23 @@ open class Cinefreak : MainAPI() {
                 ?.trim()
                 ?: return@forEach
 
-            if (decoded.contains("neodrive")) loadExtractor(decoded,mainUrl,subtitleCallback,callback)
-
-            val doc = app.get(decoded).document
-
-            val fileSize = doc
-                .select("tr")
-                .find {
-                    it.selectFirst("td")
-                        ?.text()
-                        ?.contains("File Size", true) == true
+            when {
+                "neodrive" in decoded -> {
+                    Neodrive().getUrl(
+                        decoded,
+                        link.quality,
+                        subtitleCallback,
+                        callback
+                    )
                 }
-                ?.select("td.text-right")
-                ?.lastOrNull()
-                ?.text()
-                ?.trim()
-                .orEmpty()
 
-            doc.select("a[href]").forEach { a ->
-
-                val text = a.text().trim()
-
-                val baseUrl = getBaseUrl(decoded)
-
-                val href = a.attr("href")
-                    .let {
-                        if (it.startsWith("http")) it
-                        else baseUrl + it
-                    }
-
-                when {
-
-                    text.contains("FAST CLOUD", true) ||
-                            text.contains("[FSL]", true) -> {
-
-                        callback(
-                            newExtractorLink(
-                                source = "[FSL]",
-                                name = "$name [FSL] $fileSize",
-                                url = href,
-                                type = INFER_TYPE
-                            ) {
-                                this.quality = getIndexQuality(quality)
-                            }
-                        )
-                    }
-
-                    text.contains("Cloud [Resumable]", true) -> {
-                        val generatedDoc = runCatching {
-                            app.get(href).document
-                        }.getOrNull() ?: return@forEach
-
-                        generatedDoc.select("a.download-now[href]")
-                            .forEach { dl ->
-
-                                val finalLink = dl.absUrl("href")
-                                    .ifBlank { dl.attr("href") }
-
-                                callback(
-                                    newExtractorLink(
-                                        source = "[ResumeCloud]",
-                                        name = "$name [ResumeCloud] $fileSize",
-                                        url = finalLink,
-                                        type = INFER_TYPE
-                                    ) {
-                                        this.quality = getIndexQuality(quality)
-                                    }
-                                )
-                            }
-                    }
+                "cinecloud" in decoded -> {
+                    CineCloud().getUrl(
+                        decoded,
+                        link.quality,
+                        subtitleCallback,
+                        callback
+                    )
                 }
             }
         }
@@ -719,6 +662,11 @@ open class Cinefreak : MainAPI() {
             quality.takeIf { regex.containsMatchIn(u) }
         }
     }
+
+    data class EpisodeLinkHrefs(
+        val quality: String,
+        val url: String
+    )
 
     data class SearchData(
         val results: List<Result>,
