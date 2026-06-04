@@ -20,14 +20,6 @@ buildscript {
     }
 }
 
-subprojects {
-    tasks.withType<KotlinCompile>().configureEach {
-        compilerOptions {
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
-        }
-    }
-}
-
 allprojects {
     repositories {
         google()
@@ -84,8 +76,7 @@ subprojects {
                 freeCompilerArgs.addAll(
                     "-Xno-call-assertions",
                     "-Xno-param-assertions",
-                    "-Xno-receiver-assertions",
-                    "-Xannotation-default-target=param-property"
+                    "-Xno-receiver-assertions"
                 )
             }
         }
