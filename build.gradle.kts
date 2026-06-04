@@ -16,7 +16,15 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:9.2.1")
         classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.21")
+    }
+}
+
+subprojects {
+    tasks.withType<KotlinCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        }
     }
 }
 
@@ -76,7 +84,8 @@ subprojects {
                 freeCompilerArgs.addAll(
                     "-Xno-call-assertions",
                     "-Xno-param-assertions",
-                    "-Xno-receiver-assertions"
+                    "-Xno-receiver-assertions",
+                    "-Xannotation-default-target=param-property"
                 )
             }
         }
