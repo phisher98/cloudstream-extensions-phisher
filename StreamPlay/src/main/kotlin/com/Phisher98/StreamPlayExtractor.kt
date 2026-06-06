@@ -3,7 +3,6 @@ package com.phisher98
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.SubtitleFile
@@ -16,7 +15,6 @@ import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newSubtitleFile
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -1913,7 +1911,7 @@ object StreamPlayExtractor : StreamPlay() {
                     .optString("stream_url")
 
                 if (m3u8.isNotEmpty()) {
-                    M3u8Helper.generateM3u8(
+                    generateM3u8(
                         "Mapple [${source.uppercase()}]",
                         m3u8,
                         "$base/",
@@ -2139,7 +2137,6 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokeMoviesmod(
-        title: String? = null,
         imdbId: String? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -2689,7 +2686,7 @@ object StreamPlayExtractor : StreamPlay() {
                         "Origin" to allmovielandAPI
                     )
 
-                    M3u8Helper.generateM3u8(
+                    generateM3u8(
                         "AllMovieLand-$lang",
                         playlistUrl,
                         allmovielandAPI,
@@ -2986,7 +2983,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         val referer = prorcpUrl.substringBefore("rcp")
         decryptedSource.forEach { (version, url) ->
-            M3u8Helper.generateM3u8(
+            generateM3u8(
                 "VidsrcXYZ Server ${version.capitalize()}",
                 url,
                 referer
@@ -3846,7 +3843,7 @@ object StreamPlayExtractor : StreamPlay() {
                 }
 
                 safeUrl.contains(".m3u8", ignoreCase = true) -> {
-                    M3u8Helper.generateM3u8(
+                    generateM3u8(
                         source = "Vidrock-$key",
                         streamUrl = safeUrl,
                         referer = "",
@@ -4834,7 +4831,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$vaplayer/api.php?tmdb=$tmdb&type=tv&season=$season&episode=$episode"
         }
 
-        val refer = "https://brightpathsignals.com/"
+        val refer = "https://nextgencloudfabric.com/"
 
         val response = app.get(url, referer = refer)
             .parsedSafe<Vaplayer>() ?: return
