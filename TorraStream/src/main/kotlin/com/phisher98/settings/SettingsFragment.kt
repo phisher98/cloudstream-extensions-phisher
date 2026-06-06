@@ -56,6 +56,46 @@ class SettingsFragment(
     ): View {
         val root = getLayout("settings", inflater, container)
 
+        // ===== MAIN APIS =====
+        val mainApiTextView = root.findView<TextView>("mainapi_spinner")
+        val mainApis = listOf("TorraStream (TMDB)", "TorraStream (Trakt)", "TorraStream-Anime")
+        val mainApiKeys = listOf("TMDB", "Trakt", "Anime")
+        val selectedMainApis = BooleanArray(mainApis.size)
+        
+        val savedMainApisString = sharedPref.getString("main_apis", "Trakt,Anime")
+        val savedMainApis = savedMainApisString?.split(",") ?: listOf("Trakt", "Anime")
+        savedMainApis.forEach { saved ->
+            val index = mainApiKeys.indexOf(saved)
+            if (index >= 0) selectedMainApis[index] = true
+        }
+
+        val updateMainApiText = {
+            val selected = mainApis.filterIndexed { index, _ -> selectedMainApis[index] }
+            mainApiTextView.text =
+                if (selected.isEmpty()) "Select Main APIs" else selected.joinToString(", ")
+        }
+        updateMainApiText()
+
+        mainApiTextView.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Select Main APIs")
+                .setMultiChoiceItems(mainApis.toTypedArray(), selectedMainApis) { _, which, isChecked ->
+                    selectedMainApis[which] = isChecked
+                }
+                .setPositiveButton("OK") { _, _ ->
+                    updateMainApiText()
+                    sharedPref.edit {
+                        putString(
+                            "main_apis",
+                            mainApiKeys.filterIndexed { i, _ -> selectedMainApis[i] }.joinToString(",")
+                        )
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+        mainApiTextView.makeTvCompatible()
+
         // ===== PROVIDERS =====
         val providerTextView = root.findView<TextView>("providers_spinner")
         val providers = listOf(
@@ -234,6 +274,7 @@ class SettingsFragment(
         saveBtn.makeTvCompatible()
         saveBtn.setOnClickListener {
             sharedPref.edit {
+                putString("main_apis", mainApiKeys.filterIndexed { i, _ -> selectedMainApis[i] }.joinToString(","))
                 putString("provider", providers.filterIndexed { i, _ -> selectedProviders[i] }.joinToString(","))
                 putString("language", languages.filterIndexed { i, _ -> selectedLanguages[i] }.joinToString(","))
                 putString("qualityfilter", qualities.filterIndexed { i, _ -> selectedQualities[i] }.joinToString(","))
@@ -269,6 +310,8 @@ class SettingsFragment(
                 .setMessage("This will delete all saved settings.")
                 .setPositiveButton("Reset") { _, _ ->
                     sharedPref.edit(commit = true) { clear() }
+                    selectedMainApis.fill(false)
+                    updateMainApiText()
                     selectedProviders.fill(false)
                     updateProviderText()
                     selectedLanguages.fill(false)

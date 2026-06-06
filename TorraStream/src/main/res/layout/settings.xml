@@ -34,6 +34,28 @@
                 android:padding="5dp" />
         </LinearLayout>
 
+        <!-- Main APIs -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Main APIs"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/mainapi_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/btn_dropdown"
+            android:padding="8dp"
+            android:focusable="true"
+            android:nextFocusDown="@id/providers_spinner"
+            android:text="Select Main APIs"
+            android:ellipsize="end"
+            android:scrollHorizontally="true"
+            android:singleLine="true" />
+
         <!-- Providers -->
         <TextView
             android:layout_width="wrap_content"
@@ -50,6 +72,7 @@
             android:background="@android:drawable/btn_dropdown"
             android:padding="8dp"
             android:focusable="true"
+            android:nextFocusUp="@id/mainapi_spinner"
             android:nextFocusDown="@id/sort_spinner"
             android:text="Select Providers"
             android:ellipsize="end"

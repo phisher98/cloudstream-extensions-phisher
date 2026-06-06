@@ -40,8 +40,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.json.JSONArray
 import org.json.JSONObject
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -550,41 +548,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         )
 
         return "$baseUrl/$encoded"
-    }
-}
-
-suspend fun generateMagnetLink(
-    trackerUrls: List<String>,
-    hash: String?,
-): String {
-    require(hash?.isNotBlank() == true)
-
-    val trackers = mutableSetOf<String>()
-
-    trackerUrls.amap { url ->
-        runCatching {
-            app.get(url).text
-                .lineSequence()
-                .map { it.trim() }
-                .filter { it.isNotEmpty() && !it.startsWith("#") }
-                .toList()
-        }.getOrElse { emptyList() }
-    }.flatten().toMutableSet()
-
-    return buildString {
-        append("magnet:?xt=urn:btih:").append(hash)
-
-        if (hash.isNotBlank()) {
-            append("&dn=")
-            append(URLEncoder.encode(hash, StandardCharsets.UTF_8.name()))
-        }
-
-        trackers
-            .take(10) // practical limit
-            .forEach { tracker ->
-                append("&tr=")
-                append(URLEncoder.encode(tracker, StandardCharsets.UTF_8.name()))
-            }
     }
 }
 

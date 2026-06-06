@@ -6,13 +6,14 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -23,17 +24,6 @@ fun getIndexQuality(str: String?): Int {
         ?: Qualities.Unknown.value
 }
 
-
-fun getQuality(str: String): Int {
-    return when (str) {
-        "360p" -> Qualities.P240.value
-        "480p" -> Qualities.P360.value
-        "HD" -> Qualities.P720.value
-        "HEVC" -> Qualities.P1440.value
-        "UHD" -> Qualities.P2160.value
-        else -> getQualityFromName(str)
-    }
-}
 
 fun getLanguage(language: String?): String? {
     return SubtitleHelper.fromTagToEnglishLanguageName(language ?: return null)
@@ -152,44 +142,6 @@ data class MetaAnimeData(
     @param:JsonProperty("episodes") val episodes: Map<String, MetaEpisode>? = null,
     @param:JsonProperty("mappings") val mappings: MetaMappings? = null
 )
-
-fun parseStreamsToMagnetLinks(jsonString: String): List<MagnetStream> {
-    val json = JSONObject(jsonString)
-    val streams = json.getJSONArray("streams")
-
-    return (0 until streams.length()).mapNotNull { i ->
-        val item = streams.getJSONObject(i)
-
-        val infoHash = item.optString("infoHash")
-        if (infoHash.isBlank()) return@mapNotNull null
-
-        val originalName = item.optString("name", "Unnamed")
-        val sources = item.optJSONArray("sources") ?: return@mapNotNull null
-
-        val behaviorHints = item.optJSONObject("behaviorHints")
-        val bingeGroup = behaviorHints?.optString("bingeGroup").orEmpty()
-        bingeGroup.split("|").filter { it.isNotBlank() && it != "Unknown" }
-
-        // Extract quality (simple regex to match "720p", "1080p", "WEB-DL", etc.)
-        val qualityRegex = Regex("""\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""", RegexOption.IGNORE_CASE)
-        val qualityMatch = qualityRegex.find(originalName)?.value ?: "Unknown"
-
-        // Build magnet link
-        val encodedName = URLEncoder.encode(originalName, "UTF-8")
-        val trackers = (0 until sources.length()).joinToString("&") {
-            val tracker = sources.optString(it)
-            "tr=${URLEncoder.encode(tracker, "UTF-8")}"
-        }
-
-        val magnet = "magnet:?xt=urn:btih:$infoHash&dn=$encodedName&$trackers"
-
-        MagnetStream(
-            title = originalName,
-            quality = qualityMatch,
-            magnet = magnet
-        )
-    }
-}
 
 fun extractResolutionFromDescription(description: String?): String? {
     if (description.isNullOrBlank()) return null
@@ -331,7 +283,7 @@ fun filteredCallback(
 
     return fun(link: ExtractorLink) {
 
-        if (limit in 1..resultCount) return
+        if (limit in 1 downTo resultCount) return
 
         val detectedQuality = when (link.quality) {
             in 2000..3000 -> "4k"
@@ -357,5 +309,40 @@ fun filteredCallback(
         if (maxSize != null && sizeGB != null && sizeGB > maxSize) return
         callback(link)
         resultCount++
+    }
+}
+
+suspend fun generateMagnetLink(
+    trackerUrls: List<String>,
+    hash: String?,
+): String {
+    require(hash?.isNotBlank() == true)
+
+    val trackers = mutableSetOf<String>()
+
+    trackerUrls.amap { url ->
+        runCatching {
+            app.get(url).text
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") }
+                .toList()
+        }.getOrElse { emptyList() }
+    }.flatten().toMutableSet()
+
+    return buildString {
+        append("magnet:?xt=urn:btih:").append(hash)
+
+        if (hash.isNotBlank()) {
+            append("&dn=")
+            append(URLEncoder.encode(hash, StandardCharsets.UTF_8.name()))
+        }
+
+        trackers
+            .take(10) // practical limit
+            .forEach { tracker ->
+                append("&tr=")
+                append(URLEncoder.encode(tracker, StandardCharsets.UTF_8.name()))
+            }
     }
 }
