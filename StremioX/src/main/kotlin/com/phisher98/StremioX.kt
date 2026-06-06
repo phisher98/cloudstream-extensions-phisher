@@ -403,12 +403,12 @@ class StremioX(override var mainUrl: String, override var name: String) : TmdbPr
                         this.headers=behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers ?: mapOf()
                     }
                 )
-                subtitles.map { sub ->
+                subtitles.forEach { sub ->
                     subtitleCallback.invoke(
                         newSubtitleFile(
                             SubtitleHelper.fromTagToEnglishLanguageName(sub.lang ?: "") ?: sub.lang
                             ?: "",
-                            sub.url ?: return@map
+                            sub.url ?: return@forEach
                         )
                     )
                 }

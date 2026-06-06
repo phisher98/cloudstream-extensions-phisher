@@ -425,11 +425,11 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                             filtered
                         )
                     },
-                    { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback, filtered) },
-                    { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
+                    { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback, filtered) }
                 )
             }
         }
+        invokeSubtitleAPI(id, season, episode, subtitleCallback)
         return true
     }
 

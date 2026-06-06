@@ -238,13 +238,11 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     ): Boolean {
         val loadData = parseJson<LoadData>(data)
         val normalizedId = normalizeId(loadData.id)
-        val encodedId = URLEncoder.encode(normalizedId, "UTF-8")
-        val request = app.get(buildUrl("/stream/${loadData.type}/$encodedId.json"), timeout = 120L)
+        val request = app.get(buildUrl("/stream/${loadData.type}/$normalizedId.json"), timeout = 120L)
 
         val res = if (request.isSuccessful)
             request.parsedSafe<StreamsResponse>()
-        else
-            null
+        else null
 
         if (!res?.streams.isNullOrEmpty()) {
             res.streams.forEach { stream ->
@@ -270,17 +268,17 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                             loadData.episode,
                             subtitleCallback
                         )
-                    },
-                    {
-                        invokeOpenSubs(
-                            loadData.imdbId,
-                            loadData.season,
-                            loadData.episode,
-                            subtitleCallback
-                        )
                     }
             )
         }
+
+
+        invokeOpenSubs(
+            loadData.imdbId,
+            loadData.season,
+            loadData.episode,
+            subtitleCallback
+        )
 
         return true
     }
@@ -632,12 +630,12 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                         this.headers=behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers ?: mapOf()
                     }
                 )
-                subtitles.map { sub ->
+                subtitles.forEach { sub ->
                     subtitleCallback.invoke(
                         newSubtitleFile(
                             SubtitleHelper.fromTagToEnglishLanguageName(sub.lang ?: "") ?: sub.lang
                             ?: "",
-                            sub.url ?: return@map
+                            sub.url ?: return@forEach
                         )
                     )
                 }
