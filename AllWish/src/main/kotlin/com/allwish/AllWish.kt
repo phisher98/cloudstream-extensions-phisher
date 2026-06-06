@@ -3,7 +3,6 @@ package com.allwish
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
@@ -154,7 +153,6 @@ class AllWish : MainAPI() {
                             "sub" if isHardSub -> "[Hard Sub]"
                             else -> "[Sub]"
                         }
-                        Log.d("Phisher",realUrl)
                         loadExtractor(realUrl,epIdWithType,subtitleCallback,callback)
                     }
                 }

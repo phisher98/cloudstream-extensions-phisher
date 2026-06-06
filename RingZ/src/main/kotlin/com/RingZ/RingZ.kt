@@ -558,11 +558,20 @@ class RingZ : MainAPI() {
 
             val quality = inferQuality(urlStr, keyName, valueStr)
 
-            val finalUrl = urlStr ?: continue
-            if (finalUrl.contains("mvslatest.ringzapk.in", ignoreCase = true)) continue
-            if (finalUrl.contains("yomoviesapk.com", ignoreCase = true)) continue
-            if (finalUrl.contains("ringzapidata", ignoreCase = true)) continue
-            if (finalUrl.contains("ringzmovies", ignoreCase = true)) continue
+            var finalUrl = urlStr ?: continue
+
+            val needsAppParam = listOf(
+                "ringz",
+                "yomoviesapk"
+            ).any { finalUrl.contains(it, ignoreCase = true) }
+
+            if (needsAppParam) {
+                finalUrl += if (finalUrl.contains("?")) {
+                    "&app=ringzapk.com"
+                } else {
+                    "?app=ringzapk.com"
+                }
+            }
 
             callback.invoke(
                 newExtractorLink(
