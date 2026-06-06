@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 
 class Animedubhindi : MainAPI() {
-    override var mainUrl = "https://www.animedubhindi.me"
+    override var mainUrl = "https://www.animedubhindi.cc"
     override var name = "AnimeDubHindi"
     override val hasMainPage = true
     override var lang = "hi"

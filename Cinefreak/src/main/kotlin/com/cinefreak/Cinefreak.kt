@@ -1,7 +1,5 @@
 package com.cinefreak
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.Episode
@@ -32,10 +30,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.getPostForm
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 import java.net.URI
@@ -429,7 +423,7 @@ open class Cinefreak : MainAPI() {
 
         if (tvtype == TvType.Movie) {
 
-            val movieLinks = mutableMapOf<String, String>()
+            val movieLinks = mutableListOf<EpisodeLinkHrefs>()
             val qualityCount = mutableMapOf<String, Int>()
 
             doc.select("h4.movie-title").forEach { titleEl ->
@@ -445,30 +439,38 @@ open class Cinefreak : MainAPI() {
                 container.select("a.dlbtn-download[href]")
                     .forEach { element ->
 
-                        val href = element.attr("href")
-                            .trim()
+                        val href = element.attr("href").trim()
 
                         if (href.isNotEmpty()) {
 
                             val count = (qualityCount[quality] ?: 0) + 1
                             qualityCount[quality] = count
 
-                            val key = if (count == 1) {
+                            val qualityName = if (count == 1) {
                                 quality
                             } else {
                                 "${quality}_$count"
                             }
 
-                            movieLinks[key] = href
+                            movieLinks.add(
+                                EpisodeLinkHrefs(
+                                    qualityName,
+                                    href
+                                )
+                            )
                         }
                     }
             }
+
+            val loadData = mapOf(
+                "links" to movieLinks
+            )
 
             return newMovieLoadResponse(
                 title,
                 url,
                 TvType.Movie,
-                movieLinks.toJson()
+                loadData.toJson()
             ) {
                 this.backgroundPosterUrl = background
                 this.recommendations = recommendations
@@ -567,7 +569,6 @@ open class Cinefreak : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
         val parsed = tryParseJson<Map<String, Any>>(data)
             ?: return false
 
@@ -672,7 +673,6 @@ open class Cinefreak : MainAPI() {
         val results: List<Result>,
         val total: Long,
         val page: Long,
-        @JsonProperty("total_pages")
         val totalPages: Long,
     )
 
