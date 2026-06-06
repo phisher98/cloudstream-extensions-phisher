@@ -176,7 +176,8 @@ private val providers by lazy {
                 res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesmod", "MoviesMod") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMoviesmod(res.title,res.imdbId,
+            if (!res.isAnime) invokeMoviesmod(
+                res.imdbId,
                 res.season, res.episode, subtitleCallback, callback)
         },
         Provider("bollyflix", "Bollyflix") { res, subtitleCallback, callback, _, _ ->
