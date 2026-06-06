@@ -42,7 +42,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.TorraStream.Companion.Meteorfortheweebs
-import com.phisher98.TorraStream.Companion.TorboxAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
@@ -302,7 +301,6 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             if (kitsuId != -1) {
                 runAllAsync(
                     { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback, filtered) },
-                    { invokeTorboxAnimeDebian(TorboxAPI, key, type, kitsuId, episode, callback, filtered) },
                     { invokeMeteorAnimeDebian(meteorUrl, type, kitsuId, episode, callback, filtered) }
                 )
             }

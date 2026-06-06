@@ -10,8 +10,10 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.TorraStream.Companion.Knaben
 import com.phisher98.TorraStream.Companion.Meteorfortheweebs
 import com.phisher98.TorraStream.Companion.ThePirateBayApi
+import com.phisher98.TorraStream.Companion.TorrentioAnimeAPI
 import com.phisher98.TorraStream.Companion.TorrentsDB
 import com.phisher98.TorraStream.Companion.Uindex
 import org.json.JSONArray
@@ -58,58 +60,59 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
         val meteorUrl = buildMeteorUrl(sharedPref, Meteorfortheweebs)
         val filtered = filteredCallback(sharedPref, callback)
 
-        if (!key.isNullOrEmpty() && provider!="AIO Streams") {
+        if (!key.isNullOrEmpty() && provider != "AIO Streams") {
             runAllAsync(
-                { invokeTorrentioDebian(torrentioapiUrl, id, season, episode, callback, filtered) },
-                { invokeMeteorDebian(meteorUrl, id, season, episode, callback, filtered) }
+                { invokeTorrentioDebian(torrentioapiUrl, id, season, episode, filtered) },
+                { invokeMeteorDebian(meteorUrl, id, season, episode, filtered) }
             )
         }
 
-        when (provider) {
-            "AIO Streams" if !key.isNullOrEmpty() -> {
-                runAllAsync(
-                    { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
-                )
+        if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
+            when (provider) {
+                "AIO Streams" -> {
+                    runAllAsync(
+                        { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
+                    )
+                }
             }
-            else -> {
-                runAllAsync(
-                    { invokeTorrentio(torrentioapiUrl, id, season, episode, callback, filtered) },
-                    {
-                        if (!dataObj.is_anime) invokeThepiratebay(
-                            ThePirateBayApi,
-                            id,
-                            season,
-                            episode,
-                            callback
-                        )
-                    },
-                    { if (dataObj.is_anime) invokeAnimetosho(anidbEid, callback) },
-                    { invokeTorrentioAnime(TorraStream.TorrentioAnimeAPI, kitsuId, season, episode, filtered) },
-                    {
-                        if (!dataObj.is_anime) invokeUindex(
-                            Uindex,
-                            title,
-                            year,
-                            season,
-                            episode,
-                            callback,
-                            filtered
-                        )
-                    },
-                    { invokeTorrentsDB(TorrentsDB, id, season, episode, callback) },
-                    {
-                        if (dataObj.is_anime) invokeTorrentsDBAnime(
-                            TorrentsDB,
-                            kitsuId,
-                            season,
-                            episode,
-                            callback,
-                            filtered
-                        )
-                    },
-                    { invokeKnaben(TorraStream.Knaben, isAnime, title, year, season, episode, callback, filtered) }
-                )
-            }
+        } else {
+            runAllAsync(
+                { invokeTorrentio(torrentioapiUrl, id, season, episode, callback, filtered) },
+                {
+                    if (!dataObj.is_anime) invokeThepiratebay(
+                        ThePirateBayApi,
+                        id,
+                        season,
+                        episode,
+                        callback
+                    )
+                },
+                { if (dataObj.is_anime) invokeAnimetosho(anidbEid, callback) },
+                { invokeTorrentioAnime(TorrentioAnimeAPI, kitsuId, season, episode, filtered) },
+                {
+                    if (!dataObj.is_anime) invokeUindex(
+                        Uindex,
+                        title,
+                        year,
+                        season,
+                        episode,
+                        callback,
+                        filtered
+                    )
+                },
+                { invokeTorrentsDB(TorrentsDB, id, season, episode, callback) },
+                {
+                    if (dataObj.is_anime) invokeTorrentsDBAnime(
+                        TorrentsDB,
+                        kitsuId,
+                        season,
+                        episode,
+                        callback,
+                        filtered
+                    )
+                },
+                { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback, filtered) }
+            )
         }
         invokeSubtitleAPI(id, season, episode, subtitleCallback)
         return true

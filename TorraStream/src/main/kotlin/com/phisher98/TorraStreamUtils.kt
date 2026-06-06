@@ -43,23 +43,26 @@ data class TorrentioStream(
 )
 
 data class DebianRoot(
-    @SerializedName("streams") val streams: List<Stream> = emptyList(),
-    @SerializedName("cacheMaxAge") val cacheMaxAge: Long = 0,
-    @SerializedName("staleRevalidate") val staleRevalidate: Long = 0,
-    @SerializedName("staleError") val staleError: Long = 0
+    val streams: List<Stream>,
+    val cacheMaxAge: Long,
+    val staleRevalidate: Long,
+    val staleError: Long,
 )
 
 data class Stream(
-    @SerializedName("name") val name: String = "",
-    @SerializedName("title") val title: String = "",
-    @SerializedName("url") val url: String = "",
-    @SerializedName("behaviorHints") val behaviorHints: BehaviorHints = BehaviorHints()
+    val name: String,
+    val title: String,
+    val url: String,
+    val behaviorHints: BehaviorHints,
 )
 
 data class BehaviorHints(
-    @SerializedName("bingeGroup") val bingeGroup: String? = null,
-    @SerializedName("filename") val filename: String? = null
+    val bingeGroup: String?,
+    val filename: String?,
+    val videoSize: Long?,
+    val videoHash: String?,
 )
+
 
 //Subtitles
 
@@ -283,7 +286,7 @@ fun filteredCallback(
 
     return fun(link: ExtractorLink) {
 
-        if (limit in 1 downTo resultCount) return
+        if (limit in 1..resultCount) return
 
         val detectedQuality = when (link.quality) {
             in 2000..3000 -> "4k"

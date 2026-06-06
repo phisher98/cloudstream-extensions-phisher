@@ -1,8 +1,5 @@
 package com.phisher98
 
-import com.phisher98.TorraStream.Companion.AnimetoshoAPI
-import com.phisher98.TorraStream.Companion.SubtitlesAPI
-import com.phisher98.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -13,6 +10,9 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.phisher98.TorraStream.Companion.AnimetoshoAPI
+import com.phisher98.TorraStream.Companion.SubtitlesAPI
+import com.phisher98.TorraStream.Companion.TRACKER_LIST_URL
 import java.util.Locale
 
 suspend fun invokeTorrentio(
@@ -75,7 +75,6 @@ suspend fun invokeTorrentioDebian(
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit,
     filtered: (ExtractorLink) -> Unit
 ) {
     val url = if (season == null) {
@@ -83,10 +82,9 @@ suspend fun invokeTorrentioDebian(
     } else {
         "$mainUrl/stream/series/$id:$season:$episode.json"
     }
-    val res = app.get(url).parsedSafe<DebianRoot>()
+    val res = app.get(url, timeout = 10000L).parsedSafe<DebianRoot>()
     res?.streams?.forEach { stream ->
         val fileUrl = stream.url
-
         val size = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
             .find(stream.title)
             ?.let { m -> "${m.groupValues[1].replace(',', '.')} ${m.groupValues[2].uppercase()}" }
@@ -414,87 +412,6 @@ suspend fun invokeAIOStreamsDebian(
     }
 }
 
-suspend fun invokeDebianTorbox(
-    torBoxAPI: String,
-    key: String,
-    id: String? = null,
-    season: Int? = null,
-    episode: Int? = null,
-    callback: (ExtractorLink) -> Unit,
-    filtered: (ExtractorLink) -> Unit
-) {
-    val url = if (season == null) {
-        "$torBoxAPI/$key/stream/movie/$id.json"
-    } else {
-        "$torBoxAPI/$key/stream/series/$id:$season:$episode.json"
-    }
-
-    val response = app.get(url, timeout = 10_000).parsedSafe<TorBoxDebian>() ?: return
-
-    response.streams.forEach { stream ->
-
-        val resolution = extractResolutionFromDescription(stream.description)
-
-        val sourceName = stream.name
-            .substringBeforeLast("(")
-            .trim()
-            .ifBlank { "TorBox" }
-
-        val cache = Regex("""\((.*?)\)""")
-            .find(stream.name)
-            ?.groupValues?.getOrNull(1)
-            ?.let {
-                when {
-                    stream.name.contains("Your Media", true) -> "Your Media"
-                    it.equals("Instant", true) -> "Instant"
-                    else -> "TorBox Download"
-                }
-            } ?: if (stream.name.contains("Your Media", true)) "Your Media" else "TorBox Download"
-
-        val displayName = buildString {
-            append("TorBox+ | [$cache] | ")
-            val rawName = stream.behaviorHints.filename
-            val baseName = rawName
-            .substringBeforeLast('.')
-            .replace('.', ' ')
-            .trim()
-
-            if (baseName.isNotBlank())
-                append(baseName)
-
-            // --- filesize ---
-            val fileSize = Regex("Size:\\s*([^|\\n]+)")
-                .find(stream.description)
-                ?.groupValues?.get(1)
-                ?.trim()
-            if (!fileSize.isNullOrBlank())
-                append(" | 📦 $fileSize")
-
-            // --- seeders ---
-            val seeders = Regex("Seeders:\\s*(\\d+)")
-                .find(stream.description)
-                ?.groupValues?.get(1)
-                ?.trim()
-            if (!seeders.isNullOrBlank())
-                append(" | 🌱 $seeders")
-
-        }.trim()
-
-
-        filtered.invoke(
-            newExtractorLink(
-                formatSourceName(sourceName, cache),
-                displayName,
-                url = stream.url,
-                INFER_TYPE
-            ).apply {
-                referer = ""
-                this.quality = getQualityFromName(resolution)
-            }
-        )
-    }
-
-}
 
 fun formatSourceName(sourceName: String, cache: String): String {
     return if (cache.equals("Your Media", true) &&
@@ -693,67 +610,6 @@ suspend fun invokeKnaben(
     }
 }
 
-
-
-suspend fun invokeTorboxAnimeDebian(
-    mainUrl: String,
-    key: String,
-    type: TvType,
-    id: Int? = null,
-    episode: Int? = null,
-    callback: (ExtractorLink) -> Unit,
-    filtered: (ExtractorLink) -> Unit
-) {
-    val url = if (type == TvType.Movie) {
-        "$mainUrl/$key/stream/movie/kitsu:$id.json"
-    } else {
-        "$mainUrl/$key/stream/series/kitsu:$id:$episode.json"
-    }
-    val res = app.get(url, timeout = 10_000).parsedSafe<DebianRoot>()
-    res?.streams?.forEach { stream ->
-        val fileUrl = stream.url
-
-        val size = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
-            .find(stream.title)
-            ?.let { m -> "${m.groupValues[1].replace(',', '.')} ${m.groupValues[2].uppercase()}" }
-
-        val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
-
-        val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
-
-        val formattedName = name
-            .substringBeforeLast('.')
-            .replace('.', ' ')
-            .trim()
-
-        val cache = Regex("""\((.*?)\)""").find(stream.name)
-            ?.groupValues?.get(1)
-            ?.takeIf { it == "Instant" }
-            ?: "TorBox Download"
-
-        val parts = listOfNotNull(
-            size?.let { "📦 $it" },
-            seedersNum?.let { "🌱 $it" }
-        )
-
-        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
-
-        val finalTitle = "TorBox+ Anime | [$cache] | $formattedName$suffix"
-
-        filtered.invoke(
-            newExtractorLink(
-                "TorBox+ [$cache]",
-                finalTitle,
-                url = fileUrl,
-                INFER_TYPE
-            ) {
-                this.referer = ""
-                this.quality = getIndexQuality(stream.name)
-            }
-        )
-    }
-}
-
 suspend fun invokeTorrentsDB(
     mainUrl: String,
     id: String? = null,
@@ -854,7 +710,6 @@ suspend fun invokeMeteorDebian(
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit,
     filtered: (ExtractorLink) -> Unit
 ) {
 
@@ -864,7 +719,7 @@ suspend fun invokeMeteorDebian(
         "$mainUrl/stream/series/$id:$season:$episode.json"
     }
 
-    val res = app.get(url).parsedSafe<MeteorRoot>()
+    val res = app.get(url, timeout = 10000L).parsedSafe<MeteorRoot>()
 
     res?.streams?.forEach { stream ->
 
