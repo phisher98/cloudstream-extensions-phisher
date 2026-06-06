@@ -1,18 +1,20 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import android.util.Base64
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
-import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import com.phisher98.TorraStream.Companion.Meteorfortheweebs
+import com.phisher98.TorraStream.Companion.ThePirateBayApi
+import com.phisher98.TorraStream.Companion.TorrentsDB
+import com.phisher98.TorraStream.Companion.Uindex
+import org.json.JSONArray
 import org.json.JSONObject
 
 class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvider() {
@@ -24,14 +26,6 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
     override val hasMainPage = true
     override val hasQuickSearch = false
 
-    companion object {
-        const val ThePirateBayApi = "https://thepiratebay-plus.strem.fun"
-        const val TorrentioAnimeAPI = "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
-        const val TorboxAPI= "https://stremio.torbox.app"
-        private const val Uindex = "https://uindex.org"
-        private const val Knaben = "https://knaben.org"
-    }
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -40,19 +34,19 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
     ): Boolean {
         val provider = sharedPref.getString("debrid_provider", null)
         val key = sharedPref.getString("debrid_key", null)
-        val dataObj = parseJson<LinkData>(data)
-        val isAnime = dataObj.isAnime
+        val dataObj = parseJson<LoadDataTrakt>(data)
+        val isAnime = dataObj.is_anime
         val title = dataObj.title
         val season = dataObj.season
         var episode = dataObj.episode
-        val id = dataObj.imdbId
+        val id = dataObj.imdb_id
         val year = dataObj.year
-        val anijson = app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-        val mappings = runCatching {
-            val response = app.get("https://api.ani.zip/mappings?imdb_id=$id")
-            JSONObject(response.text).optJSONObject("mappings")
-        }.getOrNull()
+        val aniResponse = runCatching { app.get("https://api.ani.zip/mappings?imdb_id=$id") }.getOrNull()
+        val anijson = aniResponse?.text.orEmpty()
+        val aniJson = runCatching { JSONObject(anijson) }.getOrNull()
+        val mappings = aniJson?.optJSONObject("mappings")
         val kitsuId = mappings?.optInt("kitsu_id")
+
         val isMovie = mappings
             ?.optString("type", "")
             ?.contains("MOVIE", ignoreCase = true) == true
@@ -60,69 +54,68 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
         episode = if (isMovie) 1 else episode
         val anidbEid = getAnidbEid(anijson, episode) ?: 0
 
-        suspend fun runAllAsync(vararg tasks: suspend () -> Unit) {
-            coroutineScope {
-                tasks.map { async { it() } }.awaitAll()
-            }
-        }
+        val torrentioapiUrl = buildTorrentioApiUrl(sharedPref, mainUrl)
+        val meteorUrl = buildMeteorUrl(sharedPref, Meteorfortheweebs)
         val filtered = filteredCallback(sharedPref, callback)
-        val apiUrl = buildApiUrl(sharedPref, mainUrl)
 
-        if (provider == "AIO Streams" && !key.isNullOrEmpty()) {
+        if (!key.isNullOrEmpty() && provider!="AIO Streams") {
             runAllAsync(
-                { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
+                { invokeTorrentioDebian(torrentioapiUrl, id, season, episode, callback, filtered) },
+                { invokeMeteorDebian(meteorUrl, id, season, episode, callback, filtered) }
             )
         }
 
-        if (provider == "TorBox" && !key.isNullOrEmpty()) {
-            runAllAsync(
-                { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback, filtered) }
-            )
-        }
-
-        if (!key.isNullOrEmpty()) {
-            runAllAsync(
-                { invokeTorrentioDebian(apiUrl, id, season, episode, callback, filtered) }
-            )
-        } else {
-            runAllAsync(
-                { invokeTorrentio(apiUrl, id, season, episode, callback, filtered) },
-                { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
-                { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
-                { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, kitsuId, season, episode, filtered) },
-                { invokeUindex(Uindex, title, year, season, episode, callback, filtered) },
-                { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback, filtered) },
-                { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
-            )
-        }
-
-
-
-        // Subtitles
-        val subApiUrl = "https://opensubtitles-v3.strem.io"
-        val url = if (season == null) "$subApiUrl/subtitles/movie/$id.json"
-        else "$subApiUrl/subtitles/series/$id:$season:$episode.json"
-
-        val headers = mapOf(
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        )
-
-        app.get(url, headers = headers, timeout = 100L)
-            .parsedSafe<Subtitles>()?.subtitles?.amap {
-                val lan = getLanguage(it.lang) ?: it.lang
-                subtitleCallback(
-                    newSubtitleFile(
-                        lan,
-                        it.url
-                    )
+        when (provider) {
+            "AIO Streams" if !key.isNullOrEmpty() -> {
+                runAllAsync(
+                    { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
                 )
             }
-
+            else -> {
+                runAllAsync(
+                    { invokeTorrentio(torrentioapiUrl, id, season, episode, callback, filtered) },
+                    {
+                        if (!dataObj.is_anime) invokeThepiratebay(
+                            ThePirateBayApi,
+                            id,
+                            season,
+                            episode,
+                            callback
+                        )
+                    },
+                    { if (dataObj.is_anime) invokeAnimetosho(anidbEid, callback) },
+                    { invokeTorrentioAnime(TorraStream.TorrentioAnimeAPI, kitsuId, season, episode, filtered) },
+                    {
+                        if (!dataObj.is_anime) invokeUindex(
+                            Uindex,
+                            title,
+                            year,
+                            season,
+                            episode,
+                            callback,
+                            filtered
+                        )
+                    },
+                    { invokeTorrentsDB(TorrentsDB, id, season, episode, callback) },
+                    {
+                        if (dataObj.is_anime) invokeTorrentsDBAnime(
+                            TorrentsDB,
+                            kitsuId,
+                            season,
+                            episode,
+                            callback,
+                            filtered
+                        )
+                    },
+                    { invokeKnaben(TorraStream.Knaben, isAnime, title, year, season, episode, callback, filtered) }
+                )
+            }
+        }
+        invokeSubtitleAPI(id, season, episode, subtitleCallback)
         return true
     }
 
-    private fun buildApiUrl(sharedPref: SharedPreferences, mainUrl: String): String {
+    private fun buildTorrentioApiUrl(sharedPref: SharedPreferences, mainUrl: String): String {
         val sort = sharedPref.getString("sort", "qualitysize")
         val languageOption = sharedPref.getString("language", "")
         val qualityFilter = sharedPref.getString("qualityfilter", "")
@@ -145,4 +138,88 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
     }
+
+    fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
+
+        val debridProvider = sharedPref.getString("debrid_provider", "") ?: ""
+        val debridKey = sharedPref.getString("debrid_key", "") ?: ""
+        val languagesPref = sharedPref.getString("language", "") ?: ""
+        val limit = sharedPref.getString("limit", "0") ?: "0"
+        val sizeFilter = sharedPref.getString("sizefilter", "0") ?: "0"
+
+        // preferred languages
+        val preferredLanguages = JSONArray().apply {
+            if (languagesPref.isNotEmpty()) {
+                languagesPref.split(",").forEach { put(it.lowercase()) }
+            } else {
+                put("en")
+                put("multi")
+            }
+        }
+
+        val languages = JSONObject().apply {
+            put("preferred", preferredLanguages)
+            put("required", JSONArray())
+            put("exclude", JSONArray())
+        }
+
+        val json = JSONObject().apply {
+            put("debridService", debridProvider.lowercase())
+            put("debridApiKey", debridKey)
+            put("cachedOnly", false)
+            put("removeTrash", true)
+            put("removeSamples", true)
+            put("removeAdult", false)
+            put("exclude3D", false)
+            put("enableSeaDex", false)
+
+            put("minSeeders", 0)
+            put("maxResults", limit.toIntOrNull() ?: 0)
+            put("maxResultsPerRes", 0)
+            put("maxSize", sizeFilter.toIntOrNull() ?: 0)
+
+            put("resolutions", JSONArray())
+            put("languages", languages)
+
+            put(
+                "resultFormat",
+                JSONArray().apply {
+                    put("title")
+                    put("quality")
+                    put("size")
+                    put("audio")
+                }
+            )
+
+            put(
+                "sortOrder",
+                JSONArray().apply {
+                    put("cached")
+                    put("resolution")
+                    put("quality")
+                    put("seeders")
+                    put("size")
+                    put("pack")
+                    put("language")
+                    put("seadex")
+                }
+            )
+        }
+
+        val encoded = Base64.encodeToString(
+            json.toString().toByteArray(),
+            Base64.URL_SAFE or Base64.NO_WRAP
+        )
+
+        return "$baseUrl/$encoded"
+    }
+
+    data class LoadDataTrakt(
+        val title: String? = null,
+        val year: Int? = null,
+        val is_anime: Boolean = false,
+        val imdb_id: String? = null,
+        val season: Int? = null,
+        val episode: Int? = null,
+    )
 }

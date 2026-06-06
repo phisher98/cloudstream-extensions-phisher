@@ -59,14 +59,13 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val AnimetoshoAPI = "https://feed.animetosho.org"
         const val TorrentioAnimeAPI = "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
-        const val TorboxAPI= "https://stremio.torbox.app"
         val TRACKER_LIST_URL = listOf(
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
         )
-        private const val Uindex = "https://uindex.org"
-        private const val Knaben = "https://knaben.org"
-        private const val TorrentsDB = "https://torrentsdb.com"
+        const val Uindex = "https://uindex.org"
+        const val Knaben = "https://knaben.org"
+        const val TorrentsDB = "https://torrentsdb.com"
         const val Meteorfortheweebs ="https://meteorfortheweebs.midnightignite.me"
         private const val tmdbAPI = "https://api.themoviedb.org/3"
         private const val apiKey = "1865f43a0549ca50d341dd9ab8b29f49"
@@ -380,11 +379,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             "AIO Streams" if !key.isNullOrEmpty() -> {
                 runAllAsync(
                     { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
-                )
-            }
-            "TorBox" if !key.isNullOrEmpty() -> {
-                runAllAsync(
-                    { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback, filtered) }
                 )
             }
             else -> {
