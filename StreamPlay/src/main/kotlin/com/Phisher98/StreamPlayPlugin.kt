@@ -163,7 +163,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(DriveleechPro())
         registerExtractorAPI(DriveleechNet())
         registerExtractorAPI(Molop())
-        registerExtractorAPI(showflixupnshare())
         registerExtractorAPI(Embedwish())
         registerExtractorAPI(Rubyvidhub())
         registerExtractorAPI(smoothpre())

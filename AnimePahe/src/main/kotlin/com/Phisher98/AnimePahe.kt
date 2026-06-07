@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.mvvm.safeAsync
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -37,8 +38,7 @@ class AnimePahe : MainAPI() {
         TvType.OVA
     )
 
-    override val mainPage =
-        listOf(MainPageData("Latest Releases", "$mainUrl/api?m=airing&page=", true))
+    override val mainPage = listOf(MainPageData("Latest Releases", "$mainUrl/api?m=airing&page=", true))
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         data class Data(
@@ -56,7 +56,7 @@ class AnimePahe : MainAPI() {
             @param:JsonProperty("total") val total: Int,
             @param:JsonProperty("data") val data: List<Data>
         )
-        val response = app.get(request.data + page, headers = headers).text
+        val response = app.get(request.data + page, headers = headers, interceptor = CloudflareKiller()).text
         val episodes = parseJson<AnimePaheLatestReleases>(response).data.map {
             newAnimeSearchResponse(
                 it.animeTitle,
