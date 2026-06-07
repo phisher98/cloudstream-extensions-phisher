@@ -745,6 +745,142 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    suspend fun invokeAnineko(
+        title: String?,
+        jpTitle: String?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        dubtype: String?,
+    ) {
+        if (title == null || episode == null) return
+        val isDub = dubtype == "DUB"
+        
+        var slug: String? = null
+        val searchTitles = listOfNotNull(jpTitle, title).filter { it.isNotBlank() }
+        for (searchTitle in searchTitles) {
+            val searchUrl = "$anineko/browser?keyword=$searchTitle"
+            val searchDoc = app.get(searchUrl).document
+            val firstResult = searchDoc.selectFirst("a.nv-anime-thumb")
+            val href = firstResult?.attr("href")
+            if (href != null) {
+                slug = href.substringAfterLast("/watch/").substringBefore("?")
+                break
+            }
+        }
+        if (slug == null) return
+
+        val url = "$anineko/watch/$slug/ep-$episode"
+
+        val doc = app.get(url).document
+
+        val panels = doc.select(".nv-server-grid")
+        val targetPanels = if (panels.isNotEmpty()) {
+            panels.filter {
+                val dataId = it.attr("data-id").lowercase()
+                if (isDub) dataId.contains("dub") else !dataId.contains("dub")
+            }
+        } else {
+            listOf(doc)
+        }
+
+        targetPanels.forEach { panel ->
+            panel.select(".server-video").forEach { serverBtn ->
+                val videoUrl = serverBtn.attr("data-video")
+                val serverName = serverBtn.ownText().trim()
+                val typeName = serverBtn.selectFirst("span")?.text()
+
+                val subMatch = Regex("""(?:sub|caption_1|c1_file)=([^&]+)""").find(videoUrl)
+                if (subMatch != null) {
+                    val subUrl = subMatch.groupValues[1]
+                    val subLang = Regex("""(?:sub_1|c1_label)=([^&]+)""").find(videoUrl)?.groupValues?.get(1) ?: "English"
+                    subtitleCallback.invoke(newSubtitleFile(subLang, subUrl))
+                }
+
+                val finalUrl = if (videoUrl.startsWith("//")) "https:$videoUrl" else videoUrl
+                val embedDoc = app.get(finalUrl, headers = mapOf("Referer" to "$anineko/")).text
+
+                val hlsRegexes = listOf(
+                    Regex("""const\s+src\s*=\s*["'](https?://[^"']+\.m3u8[^"']*)["']""", RegexOption.IGNORE_CASE),
+                    Regex("""file\s*:\s*["'](https?://[^"']+\.m3u8[^"']*)["']""", RegexOption.IGNORE_CASE),
+                    Regex("""["'](https?://[^"']+/master\.m3u8[^"']*)["']""", RegexOption.IGNORE_CASE),
+                    Regex("""["'](https?://[^"']+\.m3u8[^"']*)["']""", RegexOption.IGNORE_CASE)
+                )
+
+                var m3u8Url: String? = null
+                for (regex in hlsRegexes) {
+                    val match = regex.find(embedDoc)
+                    if (match != null) {
+                        m3u8Url = match.groupValues[1]
+                        break
+                    }
+                }
+
+                if (m3u8Url != null) {
+                    val sourceName = if (typeName != null) "$serverName - $typeName" else serverName
+                    generateM3u8(
+                        sourceName,
+                        m3u8Url,
+                        finalUrl
+                    ).forEach { link ->
+                        val newLink = newExtractorLink(
+                            source = "AniNeko",
+                            name = "⌜ AniNeko ⌟ " + link.name,
+                            url = link.url,
+                            type = ExtractorLinkType.M3U8
+                        ) {
+                            this.quality = link.quality
+                            this.headers = link.headers
+                            this.extractorData = link.extractorData
+                        }
+                        callback.invoke(newLink)
+                    }
+                } else if (serverName.contains("HD-")) {
+                    val host = Regex("""https?://([^/]+)""").find(finalUrl)?.groupValues?.get(1) ?: ""
+                    val extractor = object : com.lagradost.cloudstream3.extractors.StreamWishExtractor() {
+                        override var mainUrl = "https://$host"
+                        override var name = serverName
+                    }
+                    val links = mutableListOf<ExtractorLink>()
+                    extractor.getUrl(finalUrl, "https://$host/", subtitleCallback) { link ->
+                        links.add(link)
+                    }
+                    links.forEach { link ->
+                        val newLink = newExtractorLink(
+                            source = "AniNeko",
+                            name = "⌜ AniNeko ⌟ " + link.name + if (typeName != null) " - $typeName" else "",
+                            url = link.url,
+                            type = if (link.isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                        ) {
+                            this.quality = link.quality
+                            this.headers = link.headers
+                            this.extractorData = link.extractorData
+                        }
+                        callback.invoke(newLink)
+                    }
+                } else {
+                    val links = mutableListOf<ExtractorLink>()
+                    loadExtractor(finalUrl, "$anineko/", subtitleCallback) { link ->
+                        links.add(link)
+                    }
+                    links.forEach { link ->
+                        val newLink = newExtractorLink(
+                            source = "AniNeko",
+                            name = "⌜ AniNeko ⌟ " + link.name + if (typeName != null) " - $typeName" else "",
+                            url = link.url,
+                            type = if (link.isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                        ) {
+                            this.quality = link.quality
+                            this.headers = link.headers
+                            this.extractorData = link.extractorData
+                        }
+                        callback.invoke(newLink)
+                    }
+                }
+            }
+        }
+    }
+
     suspend fun invokeAnimepahe(
         url: String,
         episode: Int? = null,

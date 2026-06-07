@@ -3,7 +3,6 @@ import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 buildscript {
@@ -70,6 +69,7 @@ subprojects {
             targetCompatibility = JavaVersion.VERSION_1_8
         }
 
+        //noinspection WrongGradleMethod
         tasks.withType<KotlinJvmCompile> {
             compilerOptions {
                 jvmTarget.set(JvmTarget.JVM_1_8)

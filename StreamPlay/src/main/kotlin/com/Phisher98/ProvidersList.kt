@@ -7,6 +7,7 @@ import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnichi
+import com.phisher98.StreamPlayExtractor.invokeAnineko
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.phisher98.StreamPlayExtractor.invokeAnimex
@@ -158,6 +159,11 @@ private val providers by lazy {
             if (res.isAnime) {
                 val ids = getAnimeIds(res)
                 invokeAnichi(res.jpTitle, res.title, ids.tmdbYear, res.episode, subtitleCallback, callback, getDubStatus(res))
+            }
+        },
+        Provider("anineko", "AniNeko") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                invokeAnineko(res.title, res.jpTitle, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("tokyoinsider", "Tokyo Insider") { res, _, callback, _, _ ->

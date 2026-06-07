@@ -45,6 +45,7 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.malsyncAPI
 import com.phisher98.StreamPlayExtractor.invokeAnichi
+import com.phisher98.StreamPlayExtractor.invokeAnineko
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.phisher98.StreamPlayExtractor.invokeAnimex
@@ -352,6 +353,9 @@ class StreamPlayAnime : MainAPI() {
             },
             {
                 invokeReAnime(aniid, episode, subtitleCallback, callback, dubStatus)
+            },
+            {
+                invokeAnineko(anititle, jpTitle, episode, subtitleCallback, callback, dubStatus)
             }
         )
         return true

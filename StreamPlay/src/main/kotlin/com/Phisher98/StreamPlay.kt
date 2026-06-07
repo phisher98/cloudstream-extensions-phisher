@@ -219,6 +219,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         const val xpassAPI = "https://play.xpass.top"
         const val vaplayer = "https://streamdata.vaplayer.ru"
         const val peachifyAPI = "https://peachify.top"
+        const val anineko = "https://anineko.to"
 
         fun getType(t: String?): TvType {
             return when (t) {
