@@ -51,9 +51,18 @@ open class MegaPlay : ExtractorApi() {
                     "Referer" to mainUrl
                 )
 
-                val id = app.get(url, headers = headers).document.selectFirst("#megaplay-player")?.attr("data-id")
+                val id = Regex("/stream/s-\\d+/(\\d+)/")
+                    .find(
+                        app.get(url, headers = headers)
+                            .document
+                            .selectFirst("iframe.s5-embed")
+                            ?.attr("src")
+                            ?: return
+                    )
+                    ?.groupValues?.get(1)
+                    ?: return
 
-                val apiUrl = "$mainUrl/stream/getSources?id=$id&id=$id"
+                val apiUrl = "$mainUrl/stream/getSources?id=$id"
 
                 val response = runCatching {
                     app.get(apiUrl, headers).parsedSafe<MegaPlayResponse>()
@@ -119,7 +128,11 @@ open class MegaPlay : ExtractorApi() {
                     val subtitleUrls = listOf(vttResponse.url)
                         .filter { it.endsWith(".vtt") && !it.contains("thumbnails", ignoreCase = true) }
                     subtitleUrls.forEachIndexed { _, subUrl ->
-                        subtitleCallback(newSubtitleFile("English", subUrl))
+                        subtitleCallback(newSubtitleFile("English", subUrl){
+                            this.headers = mapOf(
+                                "Referer" to "$mainUrl/"
+                            )
+                        })
                     }
 
                     val fallbackM3u8 = app.get(url = url, referer = mainUrl, interceptor = m3u8Resolver).url

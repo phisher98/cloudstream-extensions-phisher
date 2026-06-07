@@ -18,6 +18,6 @@ cloudstream {
     status = 1
     tvTypes = listOf("Anime", "AnimeMovie", "OVA")
     language = "en"
-    iconUrl = "https://anineko.to/img/logo.png?v=4"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Anineko.png"
     isCrossPlatform = true
 }
