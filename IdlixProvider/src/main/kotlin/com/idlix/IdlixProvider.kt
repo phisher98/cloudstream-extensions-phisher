@@ -140,14 +140,14 @@ class IdlixProvider : MainAPI() {
 
         val title = data.title ?: "Unknown"
         val poster = data.posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
-        val backdrop = data.backdropPath?.let { "https://image.tmdb.org/t/p/w780$it" }
+        val backdrop = data.backdropPath?.let { "https://image.tmdb.org/t/p/original$it" }
 
         val year = (data.releaseDate ?: data.firstAirDate)
             ?.substringBefore("-")
             ?.toIntOrNull()
 
         val tags = data.genres?.mapNotNull { it.name } ?: emptyList()
-        val logourl = "https://image.tmdb.org/t/p/w500"+data.logoPath
+        val logourl = "https://image.tmdb.org/t/p/original"+data.logoPath
         val actors = data.cast?.map {
             Actor(it.name ?: "", it.profilePath?.let { p -> "https://image.tmdb.org/t/p/w185$p" })
         } ?: emptyList()

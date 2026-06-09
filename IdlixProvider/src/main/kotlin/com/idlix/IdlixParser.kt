@@ -1,5 +1,8 @@
 package com.idlix
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 data class ApiResponse(
     val data: List<ApiItem> = emptyList(),
     val pagination: Pagination? = null,
@@ -61,43 +64,48 @@ data class Meta(
     val sort: String? = null
 )
 
+@Serializable
 data class DetailResponse(
     val id: String? = null,
     val title: String? = null,
     val slug: String? = null,
+    @SerialName("imdb_id")
     val imdbId: String? = null,
+    @SerialName("tmdb_id")
     val tmdbId: String? = null,
     val overview: String? = null,
     val tagline: String? = null,
-
+    @SerialName("poster_path")
     val posterPath: String? = null,
+    @SerialName("backdrop_path")
     val backdropPath: String? = null,
+    @SerialName("logo_path")
     val logoPath: String? = null,
-
     val backdrops: List<String>? = null,
-
+    @SerialName("release_date")
     val releaseDate: String? = null,
+    @SerialName("first_air_date")
     val firstAirDate: String? = null,
-
     val runtime: Int? = null,
+    @SerialName("vote_average")
     val voteAverage: Any? = null,
     val popularity: Any? = null,
-
+    @SerialName("original_language")
     val originalLanguage: String? = null,
     val country: String? = null,
     val status: String? = null,
-
+    @SerialName("trailer_url")
     val trailerUrl: String? = null,
     val quality: String? = null,
     val director: String? = null,
-
     val genres: List<Genre>? = null,
     val cast: List<Cast>? = null,
-
-    val seasons: List<Season>? = null, // TV only
+    val seasons: List<Season>? = null,
+    @SerialName("first_season")
     val firstSeason: Season? = null,
-
+    @SerialName("view_count")
     val viewCount: Any? = null,
+    @SerialName("is_published")
     val isPublished: Boolean? = null
 )
 
@@ -162,15 +170,6 @@ data class SearchApiResult(
     val quality: String?,
 )
 
-data class ChallengeResponse(
-    val challenge: String,
-    val signature: String,
-    val difficulty: Int
-)
-
-data class SolveResponse(
-    val embedUrl: String? = null
-)
 data class LoadData(
     val id: String,
     val type: String // "movie" or "episode"
