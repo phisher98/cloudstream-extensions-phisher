@@ -41,7 +41,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.Normalizer
 
 class IdlixProvider : MainAPI() {
-    override var mainUrl = base64Decode("aHR0cHM6Ly96MS5pZGxpeGt1LmNvbQ==")
+    override var mainUrl = base64Decode("aHR0cHM6Ly96Mi5pZGxpeGt1LmNvbQ==")
     override var name = "Idlix"
     override val hasMainPage = true
     override var lang = "id"
