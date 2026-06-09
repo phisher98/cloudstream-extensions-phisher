@@ -8,12 +8,26 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
 class Megakino : MainAPI() {
-    override var mainUrl              = "https://megakino.team"
+    override var mainUrl              = "https://megakino5.org" //https://megakino.me
     override var name                 = "Megakino"
     override val hasMainPage          = true
     override var lang                 = "de"
     override val hasDownloadSupport   = true
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries,TvType.Documentary)
+
+    companion object {
+
+        private const val TOKEN_URL = "https://megakino5.org/index.php?yg=token"
+
+        suspend fun getTokenCookie(): String? {
+            return app.get(TOKEN_URL)
+                .headers
+                .firstOrNull { it.first.equals("set-cookie", true) }
+                ?.second
+                ?.substringBefore(";")
+        }
+
+    }
 
     override val mainPage = mainPageOf(
         "" to "Trending",
@@ -23,15 +37,26 @@ class Megakino : MainAPI() {
         "documentary" to "Documentary",
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page").document
+    override suspend fun getMainPage(
+        page: Int,
+        request: MainPageRequest
+    ): HomePageResponse {
+        val cookie = getTokenCookie() ?: ""
+
+        val document = app.get(
+            "$mainUrl/${request.data}/page/$page", headers = mapOf(
+                "Cookie" to cookie
+            )
+        ).document
+
         val home = document.select("#dle-content > a").mapNotNull {
             it.toSearchResult()
         }
+
         return newHomePageResponse(
-            list    = HomePageList(
-                name               = request.name,
-                list               = home,
+            list = HomePageList(
+                name = request.name,
+                list = home,
                 isHorizontalImages = false
             ),
             hasNext = true
@@ -59,8 +84,11 @@ class Megakino : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        val cookie = getTokenCookie() ?: ""
         val data= mapOf("do" to "search","subaction" to "search","story" to query.replace(" ","+"))
-        val document=app.post(mainUrl, data = data).document
+        val document=app.post(mainUrl, data = data,headers = mapOf(
+            "Cookie" to cookie
+        )).document
         val response = document.select("a.poster.grid-item").map {
                 it.toSearchResult1()
             }
@@ -68,7 +96,11 @@ class Megakino : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val cookie = getTokenCookie() ?: ""
+
+        val document = app.get(url, headers = mapOf(
+                "Cookie" to cookie
+        )).document
         val title = document.selectFirst("div.page__subcols.d-flex h1")?.text() ?: "Unknown"
         val poster = fixUrl(mainUrl+document.select("div.pmovie__poster.img-fit-cover img").attr("data-src"))
         val year=document.select("div.pmovie__year > span:nth-child(2)").text().toIntOrNull()
