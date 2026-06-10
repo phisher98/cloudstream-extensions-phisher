@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class AnimesaltProvider : BasePlugin() {
     override fun load() {
+        pingAnalytics("Animesalt")
         registerMainAPI(Animesalt())
         registerExtractorAPI(Pixdrive())
         registerExtractorAPI(Ghbrisk())

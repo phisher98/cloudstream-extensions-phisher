@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -295,6 +295,7 @@ class UltimaPlugin : Plugin() {
     }
 
     override fun load(context: Context) {
+        pingAnalytics("Ultima")
         // Defensive cleanup — if load() is called again (plugin reload), clean up previous state
         cleanup()
         pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

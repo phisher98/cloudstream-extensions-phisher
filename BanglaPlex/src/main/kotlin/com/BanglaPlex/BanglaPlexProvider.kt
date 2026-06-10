@@ -1,4 +1,4 @@
-package com.BanglaPlex
+﻿package com.BanglaPlex
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class BanglaPlexProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("BanglaPlex")
         registerMainAPI(Banglaplex())
         registerExtractorAPI(Rpmvid())
         registerExtractorAPI(Plextream())

@@ -1,4 +1,4 @@
-package com.Animexin
+﻿package com.Animexin
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.extractors.Dailymotion
 @CloudstreamPlugin
 class AnimexinProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("Animexin")
         registerMainAPI(Animexin())
         registerExtractorAPI(Vtbe())
         registerExtractorAPI(waaw())

@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
@@ -35,6 +35,7 @@ class StreamPlayPlugin: Plugin() {
     private val PREF_KEY_LINKS = "streamplay_stremio_saved_links"
 
     override fun load(context: Context) {
+        pingAnalytics("StreamPlay")
         val sharedPref = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
 
         // Initialize StreamPlay optimizations

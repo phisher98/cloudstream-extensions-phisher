@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.extractors.Voe
 @CloudstreamPlugin
 class AnimeDekhoPlugin: BasePlugin() {
     override fun load() {
+        com.phisher98.analytics.pingAnalytics("AnimeDekhoProvider")
         registerMainAPI(AnimeDekhoProvider())
         //registerMainAPI(OnepaceProvider())
         registerMainAPI(HindiSubAnime())

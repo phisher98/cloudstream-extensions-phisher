@@ -1,4 +1,4 @@
-package com.Aniworld
+﻿package com.Aniworld
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -22,6 +22,7 @@ import javax.crypto.spec.SecretKeySpec
 @CloudstreamPlugin
 class AniworldPlugin: Plugin() {
     override fun load(context: Context) {
+        pingAnalytics("Aniworld")
         val sharedPref = context.getSharedPreferences("serienstream_token", Context.MODE_PRIVATE)
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(Aniworld(sharedPref))

@@ -1,4 +1,4 @@
-package com.Coflix
+﻿package com.Coflix
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.extractors.Voe
 @CloudstreamPlugin
 class CoflixProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("Coflix")
         registerMainAPI(Coflix())
         registerExtractorAPI(Voe())
         registerExtractorAPI(wishonly())

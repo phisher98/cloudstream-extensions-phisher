@@ -1,4 +1,4 @@
-package com.dudefilms
+﻿package com.dudefilms
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class DudefilmsPlugin: BasePlugin() {
     override fun load() {
+        pingAnalytics("DudeFilms")
         registerMainAPI(Dudefilms())
         registerExtractorAPI(GDFlix())
         registerExtractorAPI(HUBCDN())

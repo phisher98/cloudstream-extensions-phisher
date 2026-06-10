@@ -1,4 +1,4 @@
-package com.Donghuastream
+﻿package com.Donghuastream
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.extractors.Geodailymotion
 @CloudstreamPlugin
 class DonghuastreamProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("Donghuastream")
         registerMainAPI(Donghuastream())
         registerExtractorAPI(Vtbe())
         registerExtractorAPI(waaw())

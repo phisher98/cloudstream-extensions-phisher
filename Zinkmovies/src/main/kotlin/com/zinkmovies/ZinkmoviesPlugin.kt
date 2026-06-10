@@ -1,4 +1,4 @@
-package com.zinkmovies
+﻿package com.zinkmovies
 
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.plugins.BasePlugin
@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class ZinkmoviesPlugin: BasePlugin() {
     override fun load() {
+        pingAnalytics("Zinkmovies")
         registerMainAPI(Zinkmovies())
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(HubCloud())

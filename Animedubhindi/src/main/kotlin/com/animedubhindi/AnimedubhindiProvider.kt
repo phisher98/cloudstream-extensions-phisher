@@ -1,4 +1,4 @@
-package com.animedubhindi
+﻿package com.animedubhindi
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.extractors.FileMoon
 @CloudstreamPlugin
 class AnimedubhindiProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("Animedubhindi")
         registerMainAPI(Animedubhindi())
         registerExtractorAPI(GDFlix())
         registerExtractorAPI(HubCloud())

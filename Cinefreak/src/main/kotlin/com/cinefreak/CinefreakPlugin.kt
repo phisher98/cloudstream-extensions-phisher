@@ -1,4 +1,4 @@
-package com.cinefreak
+﻿package com.cinefreak
 
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.plugins.BasePlugin
@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class CinefreakPlugin: BasePlugin() {
     override fun load() {
+        pingAnalytics("Cinefreak")
         registerMainAPI(Cinefreak())
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(HubCloud())

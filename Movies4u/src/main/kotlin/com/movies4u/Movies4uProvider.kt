@@ -1,4 +1,4 @@
-package com.movies4u
+﻿package com.movies4u
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class Movies4uProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("Movies4u")
         registerMainAPI(Movies4u())
         registerExtractorAPI(Filesdl())
         registerExtractorAPI(GDFlix())

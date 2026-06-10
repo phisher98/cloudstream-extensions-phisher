@@ -1,4 +1,4 @@
-package com.hdhub4u
+﻿package com.hdhub4u
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.extractors.StreamTape
@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class HDhub4uPlugin: BasePlugin() {
     override fun load() {
+        pingAnalytics("HDhub4u")
         registerMainAPI(HDhub4uProvider())
         registerExtractorAPI(HdStream4u())
         registerExtractorAPI(StreamTape())

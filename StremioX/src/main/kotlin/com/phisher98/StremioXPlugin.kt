@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +16,7 @@ class StremioXPlugin : Plugin() {
     private val PREF_KEY_LINKS = "stremio_saved_links"
 
     override fun load(context: Context) {
+        pingAnalytics("StremioX")
         try {
             registerMainAPI(StremioX("", "StremioX"))
         } catch (_: Throwable) {}

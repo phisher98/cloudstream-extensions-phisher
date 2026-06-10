@@ -1,4 +1,4 @@
-package com.fourKHDHub
+﻿package com.fourKHDHub
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class FourKHDHubProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("FourKHDHub")
         registerMainAPI(FourKHDHub())
         registerExtractorAPI(HubCloud())
         registerExtractorAPI(HdStream4u())

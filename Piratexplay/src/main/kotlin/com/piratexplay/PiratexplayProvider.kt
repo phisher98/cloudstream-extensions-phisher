@@ -1,4 +1,4 @@
-package com.piratexplay
+﻿package com.piratexplay
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class PiratexplayProvider : BasePlugin() {
     override fun load() {
+        pingAnalytics("Piratexplay")
         registerMainAPI(Piratexplay())
         registerExtractorAPI(Techinmind())
         registerExtractorAPI(Pixdrive())

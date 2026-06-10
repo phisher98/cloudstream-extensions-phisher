@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import androidx.appcompat.app.AppCompatActivity
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
@@ -16,6 +16,7 @@ enum class ServerList(val link: Pair<String, Boolean>) {
 @CloudstreamPlugin
 class AnimePaheProviderPlugin: Plugin() {
     override fun load() {
+        pingAnalytics("AnimePahe")
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(AnimePahe())
         registerExtractorAPI(Kwik())

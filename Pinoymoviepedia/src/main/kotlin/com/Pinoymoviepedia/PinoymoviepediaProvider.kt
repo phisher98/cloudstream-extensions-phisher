@@ -1,4 +1,4 @@
-package com.Pinoymoviepedia
+﻿package com.Pinoymoviepedia
 
 import com.lagradost.cloudstream3.extractors.Upstream
 import com.lagradost.cloudstream3.extractors.VidHidePro3
@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class PinoymoviepediaProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("Pinoymoviepedia")
         registerMainAPI(Pinoymoviepedia())
         registerMainAPI(Bluray())
         registerExtractorAPI(Ds2play())

@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-version = 3
+version = 4
 
 android {
     buildFeatures {

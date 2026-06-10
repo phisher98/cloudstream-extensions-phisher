@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
@@ -9,6 +9,7 @@ import com.phisher98.settings.SettingsFragment
 @CloudstreamPlugin
 class StremioAddonProvider: Plugin() {
     override fun load(context: Context) {
+        pingAnalytics("StremioAddon")
         val sharedPref = context.getSharedPreferences("StremioAddon", Context.MODE_PRIVATE)
         registerMainAPI(StremioAddon(sharedPref))
 

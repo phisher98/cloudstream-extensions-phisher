@@ -1,4 +1,4 @@
-package com.Animenosub
+﻿package com.Animenosub
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class AnimenosubProvider: BasePlugin() {
     override fun load() {
+        pingAnalytics("Animenosub")
         registerMainAPI(Animenosub())
         registerExtractorAPI(Vtbe())
         registerExtractorAPI(waaw())

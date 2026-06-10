@@ -1,4 +1,4 @@
-
+﻿
 package com.phisher98
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -10,6 +10,7 @@ import com.phisher98.settings.SettingsFragment
 @CloudstreamPlugin
 class SuperStreamPlugin: Plugin() {
     override fun load(context: Context) {
+        pingAnalytics("ShowBox")
         val sharedPref = context.getSharedPreferences("SuperStream", Context.MODE_PRIVATE)
         val api = ShowBox(sharedPref) // pass context
         registerMainAPI(api)

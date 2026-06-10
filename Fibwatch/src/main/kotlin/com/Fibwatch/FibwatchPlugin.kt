@@ -1,4 +1,4 @@
-package com.Fibwatch
+﻿package com.Fibwatch
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class FibwatchPlugin: BasePlugin() {
     override fun load() {
+        pingAnalytics("Fibwatch")
         registerMainAPI(Fibwatch())
         registerMainAPI(Fibwatchdrama())
         registerMainAPI(Fibtoon())

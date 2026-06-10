@@ -1,4 +1,4 @@
-package com.hindmoviez
+﻿package com.hindmoviez
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.plugins.BasePlugin
@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class HindmoviezPlugin : BasePlugin() {
     override fun load() {
+        pingAnalytics("Hindmoviez")
         registerMainAPI(Hindmoviez())
         registerExtractorAPI(Gdshine())
     }

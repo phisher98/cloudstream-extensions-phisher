@@ -1,4 +1,4 @@
-package com.phisher98
+﻿package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.plugins.BasePlugin
@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class UHDmoviesProviderPlugin: BasePlugin() {
     override fun load() {
+        pingAnalytics("UHDmoviesProvider")
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(UHDmoviesProvider())
         registerExtractorAPI(Driveleech())

@@ -1,4 +1,4 @@
-package com.toonhub4u
+﻿package com.toonhub4u
 
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.plugins.BasePlugin
@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class Toonhub4uPlugin: BasePlugin() {
     override fun load() {
+        pingAnalytics("ToonHub")
         registerMainAPI(Toonhub4u())
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(MultimoviesAIO())
