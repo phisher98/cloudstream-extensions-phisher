@@ -20,7 +20,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
@@ -1051,8 +1050,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
     suspend fun invokeAnimetosho(
-        malId: Int? = null,
-        episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
@@ -1060,14 +1057,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         if (dubtype !in setOf("SUB", "Movie")) return
 
-        val jikan = app
-            .get("$jikanAPI/anime/$malId/full", timeout = 10000L)
-            .parsedSafe<JikanResponse>()
-            ?.data
-            ?: return
-
-        val slug = jikan.title.createSlug()
-        val url = "$animetoshoAPI/episode/$slug-$episode.$anidbEid"
+        val url = "$animetoshoAPI/episode/$anidbEid"
 
         val res = safeGet(url).document
 
@@ -4212,7 +4202,7 @@ object StreamPlayExtractor : StreamPlay() {
         val m3u8 = Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
 
         if (m3u8 != null) {
-            M3u8Helper.generateM3u8(
+            generateM3u8(
                 "MoviesApi Club",
                 m3u8,
                 iframeSrc,
@@ -4425,7 +4415,7 @@ object StreamPlayExtractor : StreamPlay() {
                 if (it.isLowerCase()) it.titlecase() else it.toString()
             }
 
-            M3u8Helper.generateM3u8(
+            generateM3u8(
                 "HexaSU $name",
                 link,
                 "https://hexa.su/"
@@ -4934,7 +4924,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val isM3u8 = type.contains("hls", true) || file.contains(".m3u8")
 
                 if (isM3u8) {
-                    M3u8Helper.generateM3u8(
+                    generateM3u8(
                         "Xpass [$name]",
                         file,
                         baseRef

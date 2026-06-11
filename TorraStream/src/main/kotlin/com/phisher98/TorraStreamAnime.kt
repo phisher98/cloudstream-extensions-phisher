@@ -300,15 +300,16 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {
                 runAllAsync(
-                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback, filtered) },
-                    { invokeMeteorAnimeDebian(meteorUrl, type, kitsuId, episode, callback, filtered) }
+                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, filtered) },
+                    { invokeMeteorAnimeDebian(meteorUrl, type, kitsuId, episode, filtered) }
                 )
             }
         } else {
             runAllAsync(
                 { invokeAnimetosho(anidbEid, callback) },
                 { if (kitsuId != -1) invokeTorrentioAnimeType(torrentioDebian, type, kitsuId, episode, callback) },
-                { if (kitsuId != -1)  invokeTorrentsDBAnime(TorrentsDB, kitsuId, kitsuId, episode, callback, filtered) }
+                { if (kitsuId != -1)  invokeTorrentsDBAnime(TorrentsDB, kitsuId, kitsuId, episode,
+                    filtered) }
             )
         }
 

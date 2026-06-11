@@ -71,13 +71,13 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
             when (provider) {
                 "AIO Streams" -> {
                     runAllAsync(
-                        { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
+                        { invokeAIOStreamsDebian(key, id, season, episode, filtered) }
                     )
                 }
             }
         } else {
             runAllAsync(
-                { invokeTorrentio(torrentioapiUrl, id, season, episode, callback, filtered) },
+                { invokeTorrentio(torrentioapiUrl, id, season, episode, filtered) },
                 {
                     if (!dataObj.is_anime) invokeThepiratebay(
                         ThePirateBayApi,
@@ -96,7 +96,6 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
                         year,
                         season,
                         episode,
-                        callback,
                         filtered
                     )
                 },
@@ -107,11 +106,10 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
                         kitsuId,
                         season,
                         episode,
-                        callback,
                         filtered
                     )
                 },
-                { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback, filtered) }
+                { invokeKnaben(Knaben, isAnime, title, year, season, episode, filtered) }
             )
         }
         invokeSubtitleAPI(id, season, episode, subtitleCallback)

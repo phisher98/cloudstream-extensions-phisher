@@ -57,7 +57,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         const val ThePirateBayApi = "https://thepiratebay-plus.strem.fun"
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
-        const val AnimetoshoAPI = "https://feed.animetosho.org"
+        const val AnimetoshoAPI = "https://feed.animetosho.xyz"
         const val TorrentioAnimeAPI = "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
         val TRACKER_LIST_URL = listOf(
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
@@ -380,13 +380,13 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             when (provider) {
                 "AIO Streams" -> {
                     runAllAsync(
-                        { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
+                        { invokeAIOStreamsDebian(key, id, season, episode, filtered) }
                     )
                 }
             }
         } else {
             runAllAsync(
-                { invokeTorrentio(torrentioapiUrl, id, season, episode, callback, filtered) },
+                { invokeTorrentio(torrentioapiUrl, id, season, episode, filtered) },
                 {
                     if (!dataObj.isAnime) invokeThepiratebay(
                         ThePirateBayApi,
@@ -405,7 +405,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                         year,
                         season,
                         episode,
-                        callback,
                         filtered
                     )
                 },
@@ -416,11 +415,10 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                         kitsuId,
                         season,
                         episode,
-                        callback,
                         filtered
                     )
                 },
-                { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback, filtered) }
+                { invokeKnaben(Knaben, isAnime, title, year, season, episode, filtered) }
             )
         }
 

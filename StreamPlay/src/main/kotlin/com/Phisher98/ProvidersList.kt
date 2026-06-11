@@ -128,7 +128,8 @@ private val providers by lazy {
         Provider("animetosho", "AnimeTosho") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
                 val ids = getAnimeIds(res)
-                ids.malId?.let { invokeAnimetosho(it, res.episode, subtitleCallback, callback, getDubStatus(res), ids.anidbEid) }
+                ids.malId?.let { invokeAnimetosho(
+                    subtitleCallback, callback, getDubStatus(res), ids.anidbEid) }
             }
         },
         Provider("ReAnime", "ReAnime") { res, subtitleCallback, callback, _, _ ->

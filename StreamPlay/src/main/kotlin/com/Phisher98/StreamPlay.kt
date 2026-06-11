@@ -45,6 +45,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
+import kotlin.time.Duration.Companion.milliseconds
 
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
     override var name = "StreamPlay"
@@ -193,7 +194,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         const val nineTvAPI = "https://moviesapi.club"
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val allmovielandAPI = "https://allmovieland.io"
-        const val animetoshoAPI = "https://animetosho.org"
+        const val animetoshoAPI = "https://animetosho.xyz"
         const val nepuAPI = "https://nepu.to"
         const val dahmerMoviesAPI = "https://a.111477.xyz"
         const val animepaheAPI = "https://animepahe.pw"
@@ -373,20 +374,20 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
 
         coroutineScope {
             val resDeferred = async {
-                withTimeoutOrNull(8000) {
+                withTimeoutOrNull(8000.milliseconds) {
                     app.get(resUrl).parsedSafe<MediaDetail>()
                 }
             }
 
             val enResDeferred = async {
                 if (enResUrl == null) null
-                else withTimeoutOrNull(5000) {
+                else withTimeoutOrNull(5000.milliseconds) {
                     app.get(enResUrl).parsedSafe<MediaDetail>()
                 }
             }
 
             val logoDeferred = async {
-                withTimeoutOrNull(3000) {
+                withTimeoutOrNull(3000.milliseconds) {
                     val tempRes = resDeferred.await()
                     fetchTmdbLogoUrl(
                         tmdbAPI = tmdbAPI,
@@ -401,7 +402,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
             val cineDeferred = async {
                 val tempRes = resDeferred.await()
                 if (tempRes?.external_ids?.imdb_id != null) {
-                    withTimeoutOrNull(3000) {
+                    withTimeoutOrNull(3000.milliseconds) {
                         val cinetype = if (type == TvType.TvSeries) "series" else "movie"
                         app.get("$Cinemeta/meta/$cinetype/${tempRes.external_ids.imdb_id}.json")
                             .parsedSafe<CinemetaRes>()
@@ -459,7 +460,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
                 res.seasons?.map { season ->
                     async {
                         semaphore.withPermit {
-                            withTimeoutOrNull(5000) {
+                            withTimeoutOrNull(5000.milliseconds) {
                                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
                                     .parsedSafe<MediaDetailEpisodes>()
                                     ?.episodes
@@ -522,7 +523,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
                                 it.type?.equals("romaji", ignoreCase = true) == true
                     }?.title
                     ?: cineRes?.meta?.name
-                val syncMetaData = withTimeoutOrNull(4000) {
+                val syncMetaData = withTimeoutOrNull(4000.milliseconds) {
                     app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").text
                 }
                 val animeMetaData = syncMetaData?.let { parseAnimeData(it) }
@@ -711,7 +712,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
                     success = true
                 }.onFailure { e ->
                     Log.w(TAG, "Provider ${provider.id} failed, retrying: ${e.message}")
-                    kotlinx.coroutines.delay(2000)
+                    kotlinx.coroutines.delay(2000.milliseconds)
                     runCatching {
                         provider.invoke(res, subtitleCallback, wrappedCallback, authToken, dahmerMoviesAPI)
                         success = true

@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -342,8 +341,6 @@ class StreamPlayAnime : MainAPI() {
             {
                 malId?.let {
                     invokeAnimetosho(
-                        it,
-                        episode,
                         subtitleCallback,
                         callback,
                         dubStatus,
