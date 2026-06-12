@@ -80,6 +80,15 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                 val syncKeyInput = credsView.findView<EditText>("sync_key")
                 val customDbSwitch = credsView.findView<Switch>("custom_db_switch")
                 val customDbSection = credsView.findView<LinearLayout>("custom_db_section")
+        
+                credsView.findView<EditText>("firebase_rules_snippet").apply {
+                    setOnClickListener {
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        val clip = android.content.ClipData.newPlainText("Firebase Rules", this.text.toString())
+                        clipboard.setPrimaryClip(clip)
+                        showToast("Copied Firebase Rules to clipboard")
+                    }
+                }
                 val firebaseUrlInput = credsView.findView<EditText>("firebase_url")
                 val generateKeyBtn = credsView.findView<Button>("generate_key_btn")
 

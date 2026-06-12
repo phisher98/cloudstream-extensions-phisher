@@ -89,6 +89,27 @@
                 android:padding="5dp"
                 android:hint="https://your-project-default-rtdb.firebaseio.com/"
                 android:inputType="textUri" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="To secure your database, go to Firebase Console > Realtime Database > Rules and paste the following:"
+                android:textSize="12sp"
+                android:layout_marginTop="15dp"
+                android:layout_marginBottom="5dp" />
+                
+            <EditText
+                android:id="@+id/firebase_rules_snippet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:fontFamily="monospace"
+                android:focusable="false"
+                android:clickable="true"
+                android:longClickable="true"
+                android:background="#22000000"
+                android:padding="10dp"
+                android:text="{\n  &quot;rules&quot;: {\n    &quot;sync&quot;: {\n      &quot;$syncKey&quot;: {\n        &quot;.read&quot;: true,\n        &quot;.write&quot;: true\n      }\n    }\n  }\n}" />
         </LinearLayout>
 
     </LinearLayout>
