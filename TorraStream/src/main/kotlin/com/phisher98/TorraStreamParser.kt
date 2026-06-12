@@ -381,17 +381,21 @@ data class LinkData(
 )
 
 data class MeteorRoot(
-    val streams: List<MeteorStream>?
+    val streams: List<MeteorStream>,
+    val cacheMaxAge: Long,
+    val staleRevalidate: Long,
+    val staleError: Long,
 )
 
 data class MeteorStream(
     val name: String,
-    val description: String,
+    val title: String,
     val url: String,
-    val behaviorHints: MeteorHints
+    val behaviorHints:  MeteorBehaviorHints,
 )
 
-data class MeteorHints(
+data class  MeteorBehaviorHints(
+    val bingeGroup: String,
     val filename: String?,
-    val videoSize: Long?
+    val videoSize: Long?,
 )

@@ -723,7 +723,7 @@ suspend fun invokeMeteorDebian(
             "%.1f GB".format(it / 1024.0 / 1024.0 / 1024.0)
         }
 
-        val name = stream.behaviorHints.filename ?: stream.description.substringAfter("📄 ").substringBefore("\n")
+        val name = stream.behaviorHints.filename ?: stream.title.substringAfter("📄 ").substringBefore("\n")
 
         val formattedName = name
             .substringBeforeLast('.')
@@ -731,7 +731,7 @@ suspend fun invokeMeteorDebian(
             .trim()
 
         val resolution = Regex("""\d{3,4}p""").find(stream.name)?.value
-        val audio = Regex("""🔊\s*(.*)""").find(stream.description)?.groupValues?.getOrNull(1)
+        val audio = Regex("""🔊\s*(.*)""").find(stream.title)?.groupValues?.getOrNull(1)
 
         val parts = listOfNotNull(
             resolution?.let { "🎞 $it" },
@@ -787,7 +787,7 @@ suspend fun invokeMeteorAnimeDebian(
         }
 
         val name = stream.behaviorHints.filename
-            ?: stream.description.substringAfter("📄 ").substringBefore("\n")
+            ?: stream.title.substringAfter("📄 ").substringBefore("\n")
 
         val formattedName = name
             .substringBeforeLast('.')
@@ -795,7 +795,7 @@ suspend fun invokeMeteorAnimeDebian(
             .trim()
 
         val resolution = Regex("""\d{3,4}p""").find(stream.name)?.value
-        val audio = Regex("""🔊\s*(.*)""").find(stream.description)?.groupValues?.getOrNull(1)
+        val audio = Regex("""🔊\s*(.*)""").find(stream.title)?.groupValues?.getOrNull(1)
         val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.getOrNull(1)
 
         val parts = listOfNotNull(
