@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.plugins.BasePlugin
 @CloudstreamPlugin
 class LayarKacaProviderPlugin: BasePlugin() {
     override fun load() {
-        pingAnalytics("LayarKacaProvider")
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(LayarKacaProvider())
         registerExtractorAPI(EmturbovidExtractor())

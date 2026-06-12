@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class SuperStreamPlugin: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("SuperStream")
         val sharedPref = context.getSharedPreferences("SuperStream", Context.MODE_PRIVATE)
         registerMainAPI(SuperStream(sharedPref))
 

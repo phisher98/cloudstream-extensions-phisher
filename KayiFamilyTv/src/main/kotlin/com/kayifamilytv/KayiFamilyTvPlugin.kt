@@ -7,7 +7,6 @@ import android.content.Context
 @CloudstreamPlugin
 class KayiFamilyTvPlugin: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("KayiFamilyTv")
         // Registers the main API for this plugin
         registerMainAPI(KayiFamilyTv())
         registerExtractorAPI(Videa())

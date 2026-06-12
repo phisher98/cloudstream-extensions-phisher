@@ -16,7 +16,6 @@ enum class ServerList(val link: Pair<String, Boolean>) {
 @CloudstreamPlugin
 class AnimePaheProviderPlugin: Plugin() {
     override fun load() {
-        pingAnalytics("AnimePahe")
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(AnimePahe())
         registerExtractorAPI(Kwik())

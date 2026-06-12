@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class FourKHDHubProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("FourKHDHub")
         registerMainAPI(FourKHDHub())
         registerExtractorAPI(HubCloud())
         registerExtractorAPI(HdStream4u())

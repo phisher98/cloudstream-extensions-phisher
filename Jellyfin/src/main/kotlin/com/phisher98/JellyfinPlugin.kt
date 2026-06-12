@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class JellyfinPlugin: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("Jellyfin")
         val sharedPref = context.getSharedPreferences("SuperStream", Context.MODE_PRIVATE)
         registerMainAPI(Jellyfin(sharedPref))
         val activity = context as AppCompatActivity

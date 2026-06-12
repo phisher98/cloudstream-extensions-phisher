@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class PublicSportsIPTVProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("PublicSportsIPTV")
         registerMainAPI(PublicSportsIPTV())
     }
 }

@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class NetcinezProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Netcinez")
         registerMainAPI(Netcinez())
     }
 }

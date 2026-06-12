@@ -9,7 +9,6 @@ import com.phisher98.settings.SettingsFragment
 @CloudstreamPlugin
 class TorraStreamProvider: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("TorraStream")
         val sharedPref = context.getSharedPreferences("TorraStream", Context.MODE_PRIVATE)
         val savedMainApisString = sharedPref.getString("main_apis", "Trakt,Anime")
         val savedMainApis = savedMainApisString?.split(",") ?: listOf("Trakt", "Anime")

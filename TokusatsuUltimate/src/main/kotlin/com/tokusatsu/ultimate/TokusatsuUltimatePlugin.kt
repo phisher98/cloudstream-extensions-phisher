@@ -7,7 +7,6 @@ import android.content.Context
 @CloudstreamPlugin
 class TokusatsuUltimatePlugin: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("TokusatsuUltimate")
         // Registers the main API for this plugin
         registerMainAPI(TokusatsuUltimate())
         registerExtractorAPI(TokusatsuUltimate.P2pplay())

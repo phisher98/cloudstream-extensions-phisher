@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.extractors.Mp4Upload
 @CloudstreamPlugin
 class AnimenosubProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Animekhor")
         registerMainAPI(Animekhor())
         registerMainAPI(Donghuaword())
         registerExtractorAPI(embedwish())

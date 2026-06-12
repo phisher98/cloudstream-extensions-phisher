@@ -7,7 +7,6 @@ import android.content.Context
 @CloudstreamPlugin
 class TokuZillaPlugin: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("TokuZilla")
         // Registers the main API for this plugin
         registerMainAPI(TokuZilla())
         registerExtractorAPI(TokuZilla.P2pplay())

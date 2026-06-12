@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class TamilblastersPlugin: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("Tamilblasters")
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(TamilblastersProvider())
         registerExtractorAPI(Streamhg())

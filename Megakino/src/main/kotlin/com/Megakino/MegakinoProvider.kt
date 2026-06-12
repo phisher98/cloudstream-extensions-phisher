@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.extractors.Voe
 @CloudstreamPlugin
 class MegakinoProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Megakino")
         registerMainAPI(Megakino())
         registerExtractorAPI(Voe())
         registerExtractorAPI(Gxplayer())

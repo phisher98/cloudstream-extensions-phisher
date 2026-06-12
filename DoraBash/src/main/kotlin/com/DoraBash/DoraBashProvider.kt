@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.extractors.FileMoon
 @CloudstreamPlugin
 class DoraBashProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("DoraBash")
         registerMainAPI(DoraBash())
         registerExtractorAPI(Vtbe())
         registerExtractorAPI(waaw())

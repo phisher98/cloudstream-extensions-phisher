@@ -11,7 +11,6 @@ import com.lagradost.cloudstream3.extractors.Voe
 @CloudstreamPlugin
 class AnimeDekhoPlugin: BasePlugin() {
     override fun load() {
-        com.phisher98.analytics.pingAnalytics("AnimeDekhoProvider")
         registerMainAPI(AnimeDekhoProvider())
         //registerMainAPI(OnepaceProvider())
         registerMainAPI(HindiSubAnime())

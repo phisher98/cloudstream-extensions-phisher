@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class GoojaraProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Goojara")
         registerMainAPI(Goojara())
         registerExtractorAPI(Wootly())
         registerExtractorAPI(Stre4mpay())

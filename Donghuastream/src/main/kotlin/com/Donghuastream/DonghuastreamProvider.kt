@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.extractors.Geodailymotion
 @CloudstreamPlugin
 class DonghuastreamProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Donghuastream")
         registerMainAPI(Donghuastream())
         registerExtractorAPI(Vtbe())
         registerExtractorAPI(waaw())

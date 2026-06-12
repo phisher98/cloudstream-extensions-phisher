@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class TopcartoonsProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Topcartoons")
         registerMainAPI(Topcartoons())
     }
 }

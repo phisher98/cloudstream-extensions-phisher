@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class PmsmPlugin : Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("Pmsm")
         registerMainAPI(Pmsm())
         registerExtractorAPI(DhtprePmsm())
         registerExtractorAPI(NetuPmsm())

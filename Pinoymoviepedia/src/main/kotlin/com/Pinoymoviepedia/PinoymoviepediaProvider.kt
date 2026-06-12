@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class PinoymoviepediaProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Pinoymoviepedia")
         registerMainAPI(Pinoymoviepedia())
         registerMainAPI(Bluray())
         registerExtractorAPI(Ds2play())

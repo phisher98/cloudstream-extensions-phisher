@@ -10,7 +10,6 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class FibwatchPlugin: BasePlugin() {
     override fun load() {
-        pingAnalytics("Fibwatch")
         registerMainAPI(Fibwatch())
         registerMainAPI(Fibwatchdrama())
         registerMainAPI(Fibtoon())

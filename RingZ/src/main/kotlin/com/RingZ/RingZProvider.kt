@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class RingZProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("RingZ")
         registerMainAPI(RingZ())
     }
 }

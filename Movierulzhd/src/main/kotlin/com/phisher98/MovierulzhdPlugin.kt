@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class MovierulzhdPlugin: BasePlugin() {
     override fun load() {
-        pingAnalytics("Movierulzhd")
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(Movierulzhd())
         registerMainAPI(Hdmovie2())

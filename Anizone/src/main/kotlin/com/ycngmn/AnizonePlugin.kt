@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 @CloudstreamPlugin
 class AnizonePlugin: Plugin() {
     override fun load(context: Context) {
-        pingAnalytics("Anizone")
         val sharedPref = context.getSharedPreferences("AnizonePref", Context.MODE_PRIVATE)
         registerMainAPI(AnizoneProvider(sharedPref))
 

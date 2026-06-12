@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class HindmoviezPlugin : BasePlugin() {
     override fun load() {
-        pingAnalytics("Hindmoviez")
         registerMainAPI(Hindmoviez())
         registerExtractorAPI(Gdshine())
     }

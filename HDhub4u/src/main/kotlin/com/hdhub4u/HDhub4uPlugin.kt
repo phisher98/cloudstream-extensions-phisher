@@ -10,7 +10,6 @@ import com.lagradost.cloudstream3.app
 @CloudstreamPlugin
 class HDhub4uPlugin: BasePlugin() {
     override fun load() {
-        pingAnalytics("HDhub4u")
         registerMainAPI(HDhub4uProvider())
         registerExtractorAPI(HdStream4u())
         registerExtractorAPI(StreamTape())

@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class AnichiPlugin : BasePlugin() {
     override fun load() {
-        pingAnalytics("Anichi")
         registerMainAPI(Anichi())
         registerExtractorAPI(swiftplayers())
         registerExtractorAPI(StreamWishExtractor())

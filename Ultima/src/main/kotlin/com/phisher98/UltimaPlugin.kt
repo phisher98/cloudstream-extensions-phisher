@@ -296,7 +296,6 @@ class UltimaPlugin : Plugin() {
     }
 
     override fun load(context: Context) {
-        pingAnalytics("Ultima")
         // Defensive cleanup — if load() is called again (plugin reload), clean up previous state
         cleanup()
         pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

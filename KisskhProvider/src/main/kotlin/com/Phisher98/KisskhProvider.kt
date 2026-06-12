@@ -231,7 +231,7 @@ class KisskhProvider : MainAPI() {
 
 
         return newTvSeriesLoadResponse(
-            res.title ?: return null,
+            res.title,
             url,
             if (res.type == "Movie" || episodes.size == 1) TvType.Movie else TvType.TvSeries,
             episodes.reversed()

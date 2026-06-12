@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class AllWishPlugin : BasePlugin() {
     override fun load() {
-        pingAnalytics("AllWish")
         registerMainAPI(AllWish())
         registerExtractorAPI(MegaPlay())
         registerExtractorAPI(Zen())

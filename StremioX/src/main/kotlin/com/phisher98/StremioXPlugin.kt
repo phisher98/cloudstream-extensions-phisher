@@ -16,7 +16,6 @@ class StremioXPlugin : Plugin() {
     private val PREF_KEY_LINKS = "stremio_saved_links"
 
     override fun load(context: Context) {
-        pingAnalytics("StremioX")
         try {
             registerMainAPI(StremioX("", "StremioX"))
         } catch (_: Throwable) {}

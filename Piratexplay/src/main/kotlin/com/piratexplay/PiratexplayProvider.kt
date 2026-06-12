@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class PiratexplayProvider : BasePlugin() {
     override fun load() {
-        pingAnalytics("Piratexplay")
         registerMainAPI(Piratexplay())
         registerExtractorAPI(Techinmind())
         registerExtractorAPI(Pixdrive())

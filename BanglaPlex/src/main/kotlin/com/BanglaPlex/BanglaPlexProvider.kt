@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class BanglaPlexProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("BanglaPlex")
         registerMainAPI(Banglaplex())
         registerExtractorAPI(Rpmvid())
         registerExtractorAPI(Plextream())

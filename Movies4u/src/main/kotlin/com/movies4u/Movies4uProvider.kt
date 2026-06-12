@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class Movies4uProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Movies4u")
         registerMainAPI(Movies4u())
         registerExtractorAPI(Filesdl())
         registerExtractorAPI(GDFlix())

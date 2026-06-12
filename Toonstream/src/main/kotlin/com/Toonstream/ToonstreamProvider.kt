@@ -10,7 +10,6 @@ import com.lagradost.cloudstream3.extractors.Vidmolyme
 @CloudstreamPlugin
 class ToonstreamProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("Toonstream")
         registerMainAPI(Toonstream())
         registerExtractorAPI(StreamSB8())
         registerExtractorAPI(Vidmolyme())

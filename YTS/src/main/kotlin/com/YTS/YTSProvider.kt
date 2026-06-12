@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 @CloudstreamPlugin
 class YTSProvider: BasePlugin() {
     override fun load() {
-        pingAnalytics("YTS")
         registerMainAPI(YTS())
         registerMainAPI(YTSMX())
 
