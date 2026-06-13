@@ -135,11 +135,10 @@ open class Cinefreak : MainAPI() {
 
         val doc = app.get(url, headers = headers).document
 
-        var title = doc.select("h1.page-title")
-            .text()
-            .substringBefore("(")
+        val fullTitleText = doc.select("h1.page-title").text()
+        var title = fullTitleText.substringBefore(" Download").substringBefore(" [").trim()
 
-        val seasonTitle = title
+        val seasonTitle = fullTitleText
 
         val seasonNumber = Regex("""Season\s*(\d+)""", RegexOption.IGNORE_CASE)
             .find(seasonTitle)
@@ -149,8 +148,11 @@ open class Cinefreak : MainAPI() {
 
         val plot = doc.select("""meta[property=og:description]""")
             .attr("content")
+            .ifBlank {
+                doc.select("div.entry-content p").text()
+            }
 
-        val tags = doc.select("div.sgeneros a")
+        val tags = doc.select("div.sgeneros a, span.badge.badge-outline a")
             .eachText()
             .toMutableList()
 
@@ -498,19 +500,20 @@ open class Cinefreak : MainAPI() {
                     ?.toIntOrNull()
                     ?: 1
 
+            val epBadgeText = card.select("span.episode-badge").text()
             val episodeLabel =
-                Regex("""Episode\s+([\d\-]+)""")
-                    .find(card.select("span.episode-badge").text())
-                    ?.groupValues
-                    ?.getOrNull(1)
-                    ?: return@forEach
+                epBadgeText.replace(Regex("(?i)Episode\\s*"), "").trim().ifBlank {
+                    card.select("div.ep-title").text().trim()
+                }
+
+            if (episodeLabel.isBlank()) return@forEach
 
             val firstEpisode =
                 Regex("""\d+""")
                     .find(episodeLabel)
                     ?.value
                     ?.toIntOrNull()
-                    ?: return@forEach
+                    ?: 1
 
             val info = responseData?.meta?.videos?.find {
                 it.season == season &&
@@ -532,8 +535,11 @@ open class Cinefreak : MainAPI() {
                 "links" to links
             ).toJson()
 
+            val epTitle = card.select("div.ep-title").text().trim()
+            val defaultName = epTitle.takeIf { it.isNotBlank() } ?: "S$season Episode $episodeLabel"
+
             episodesData += newEpisode(data) {
-                this.name = "S$season Episode $episodeLabel"
+                this.name = info?.title ?: defaultName
                 this.season = season
                 this.episode = firstEpisode
                 this.posterUrl = info?.thumbnail
