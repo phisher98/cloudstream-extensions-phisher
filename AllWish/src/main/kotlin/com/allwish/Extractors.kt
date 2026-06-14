@@ -51,15 +51,18 @@ open class MegaPlay : ExtractorApi() {
                     "Referer" to mainUrl
                 )
 
-                val id = Regex("/stream/s-\\d+/(\\d+)/")
-                    .find(
-                        app.get(url, headers = headers)
-                            .document
-                            .selectFirst("iframe.s5-embed")
-                            ?.attr("src")
-                            ?: return
-                    )
-                    ?.groupValues?.get(1)
+                val page = app.get(url, headers = headers).document
+
+                val id = page.selectFirst("iframe.s5-embed")
+                    ?.attr("src")
+                    ?.let {
+                        Regex("/stream/s-\\d+/(\\d+)/")
+                            .find(it)
+                            ?.groupValues
+                            ?.getOrNull(1)
+                    }
+                    ?: page.selectFirst("#megaplay-player")
+                        ?.attr("data-id")
                     ?: return
 
                 val apiUrl = "$mainUrl/stream/getSources?id=$id"

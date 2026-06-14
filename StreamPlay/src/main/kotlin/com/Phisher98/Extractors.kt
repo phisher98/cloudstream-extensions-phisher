@@ -3097,14 +3097,20 @@ open class MegaPlay : ExtractorApi() {
                 "Referer" to mainUrl
             )
 
-            val id = url.substringAfterLast("/").substringBefore("?")
-                .takeIf { it.isNotBlank() }
-                ?: app.get(url, headers = headers)
-                    .document
-                    .selectFirst("#vidcloud-player")
+
+            val page = app.get(url, headers = headers).document
+
+            val id = page.selectFirst("iframe.s5-embed")
+                ?.attr("src")
+                ?.let {
+                    Regex("/stream/s-\\d+/(\\d+)/")
+                        .find(it)
+                        ?.groupValues
+                        ?.getOrNull(1)
+                }
+                ?: page.selectFirst("#megaplay-player,#megaplay-player")
                     ?.attr("data-id")
                 ?: return
-
 
             val apiUrl = "$mainUrl/embed-2/v2/e-1/getSources?id=$id"
 
