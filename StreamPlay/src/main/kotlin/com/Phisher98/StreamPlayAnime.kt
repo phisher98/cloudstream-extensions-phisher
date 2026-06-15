@@ -44,6 +44,7 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.malsyncAPI
 import com.phisher98.StreamPlayExtractor.invokeAnichi
+import com.phisher98.StreamPlayExtractor.invokeAnikage
 import com.phisher98.StreamPlayExtractor.invokeAnineko
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
@@ -317,7 +318,7 @@ class StreamPlayAnime : MainAPI() {
         //val season= jpTitle?.let { extractSeason(it) }
         val year=mediaData.year
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
-        val zoro = malsync?.zoro
+        //val zoro = malsync?.zoro
         //val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
 
@@ -335,6 +336,7 @@ class StreamPlayAnime : MainAPI() {
             },
 
             { invokeAnizone(jpTitle, episode, subtitleCallback, callback, dubStatus) },
+            { invokeAnikage(aniid, anititle ?: jpTitle, episode, subtitleCallback, callback, dubStatus) },
             { invokeAnichi(jpTitle, anititle, year, episode, subtitleCallback, callback, dubStatus) },
             { invokeKickAssAnime(jpTitle,kaasSlug, episode, subtitleCallback, callback, dubStatus) },
             { invokeAnimex(malId, aniid, jpTitle, episode, subtitleCallback, callback, dubStatus) },

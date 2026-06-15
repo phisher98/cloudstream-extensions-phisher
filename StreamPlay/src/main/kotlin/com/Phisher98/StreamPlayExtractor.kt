@@ -56,6 +56,7 @@ import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.time.Duration.Companion.milliseconds
 
 
 val session = Session(Requests().baseClient)
@@ -1223,7 +1224,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         for ((type, providerId) in providers) {
 
-            delay((400L..900L).random())
+            delay((400L..900L).random().milliseconds)
 
             runCatching {
 
@@ -3280,7 +3281,7 @@ object StreamPlayExtractor : StreamPlay() {
             val res = safeGet(url, timeout = 10000L)
 
             if (res.code == 500) {
-                delay(2500L)
+                delay(2500L.milliseconds)
             } else {
                 return res.parsedSafe()
             }
@@ -5478,6 +5479,132 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 )
             }
+        }
+    }
+    suspend fun invokeAnikage(
+        anilistId: Int?,
+        query: String?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        dubtype: String?,
+    ) {
+        if (query.isNullOrBlank()) return
+
+        val searchUrl = "https://anikage.cc/api/media/anime/advanced-search?per_page=25&page=1&query=${query.replace(" ", "%20")}"
+        val searchRes = tryParseJson<AnikageSearchResponse>(app.get(searchUrl).text) ?: return
+        
+        val results = searchRes.results ?: return
+        var slug: String? = null
+        for ((i, element) in results.withIndex()) {
+            val res = element
+            val id = res.id ?: res.anilistId
+            if (anilistId != null && id == anilistId) {
+                slug = res.slug
+                break
+            }
+            if (anilistId == null && i == 0) {
+                slug = res.slug
+            }
+        }
+        
+        if (slug == null) return
+
+        val episodesUrl = "https://anikage.cc/api/media/anime/$slug/episodes"
+        val episodesRaw = app.get(episodesUrl).text
+        val episodesList = tryParseJson<AnikageEpisodesResponse>(episodesRaw)?.episodes 
+                           ?: tryParseJson<List<AnikageEpisode>>(episodesRaw) 
+                           ?: return
+        
+        var episodeNumberFound = false
+        for (i in episodesList.indices) {
+            val epObj = episodesList[i]
+            val epNum = epObj.number ?: epObj.episode
+            if (epNum == episode) {
+                episodeNumberFound = true
+                break
+            }
+        }
+        
+        if (!episodeNumberFound) return
+
+        val lang = if (dubtype == "DUB") "dub" else "sub"
+        val serverUrl = "https://anikage.cc/api/media/anime/$slug/episodes/$episode/servers?lang=$lang"
+        val serverRes = tryParseJson<AnikageServersResponse>(app.get(serverUrl).text)
+        val serversArr = serverRes?.servers
+        
+        val providerIds = mutableListOf<String>()
+        if (serversArr != null) {
+            for (i in serversArr.indices) {
+                val sId = serversArr[i].id
+                if (!sId.isNullOrBlank()) providerIds.add(sId)
+            }
+        }
+        if (providerIds.isEmpty()) {
+            providerIds.addAll(listOf("megg", "miko", "anya", "verse", "neko"))
+        }
+
+        coroutineScope {
+            providerIds.map { provider ->
+                async {
+                    val sourceUrl = "https://anikage.cc/api/media/anime/$slug/episodes/$episode/sources?lang=$lang&provider=$provider"
+                    val serverData = tryParseJson<AnikageSourcesResponse>(app.get(sourceUrl).text) ?: return@async
+                    
+                    val subtitles = serverData.subtitles
+                    if (subtitles != null) {
+                        for (i in subtitles.indices) {
+                            val subObj = subtitles[i]
+                            val label = subObj.label ?: lang
+                            val file = subObj.file
+                            if (file.isNullOrBlank()) continue
+                            subtitleCallback(newSubtitleFile(label, "https://prox.anikage.cc/vtt/$file"))
+                        }
+                    }
+
+                    val sources = serverData.sources
+                    if (sources != null) {
+                        val subTypeStr = if (lang == "sub") {
+                            if (!subtitles.isNullOrEmpty()) "Softsub" else "Hardsub"
+                        } else ""
+                        val baseNameStr = "Anikage $subTypeStr".trim()
+
+                        for (i in sources.indices) {
+                            val srcObj = sources[i]
+                            val isM3u8 = srcObj.isM3U8 ?: false
+                            val srcUrl = srcObj.url
+                            if (srcUrl.isNullOrBlank()) continue
+                            
+                            val qualityStr = srcObj.quality?.takeIf { it.isNotBlank() }
+                            val typeStr = srcObj.type?.takeIf { it.isNotBlank() }
+
+                            val videoUrl = "https://prox.anikage.cc/${if(isM3u8) "m3u8" else "stream"}/$srcUrl"
+                            val nameStr = "$baseNameStr ${qualityStr?.replaceFirstChar { it.uppercase() } ?: typeStr?.replaceFirstChar { it.uppercase() } ?: ""}".trim()
+
+                            callback(
+                                newExtractorLink(
+                                    "Anikage",
+                                    nameStr,
+                                    videoUrl,
+                                    if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                                ) {
+                                    this.quality = getQualityFromName(qualityStr)
+                                    this.referer = "https://anikage.cc/"
+                                }
+                            )
+                        }
+                    }
+
+                    val embeds = serverData.embeds
+                    if (embeds != null) {
+                        for (i in embeds.indices) {
+                            val embedObj = embeds[i]
+                            val embedUrl = embedObj.url
+                            if (embedUrl.isNullOrBlank()) continue
+                            loadExtractor(embedUrl, "https://anikage.cc/", subtitleCallback, callback)
+                        }
+                    }
+                }
+            }.forEach { it.await() }
         }
     }
 

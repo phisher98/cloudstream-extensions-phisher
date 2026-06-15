@@ -812,3 +812,55 @@ data class ZinkLink(
     val url: String,
     val title: String,
 )
+
+// Anikage
+
+data class AnikageSearchResponse(
+    val results: List<AnikageSearchResult>? = null
+)
+
+data class AnikageSearchResult(
+    val id: Int? = null,
+    val anilistId: Int? = null,
+    val slug: String? = null
+)
+
+data class AnikageEpisodesResponse(
+    val episodes: List<AnikageEpisode>? = null
+)
+
+data class AnikageEpisode(
+    val number: Int? = null,
+    val episode: Int? = null
+)
+
+data class AnikageServersResponse(
+    val servers: List<AnikageServer>? = null
+)
+
+data class AnikageServer(
+    val id: String? = null,
+    val name: String? = null
+)
+
+data class AnikageSourcesResponse(
+    val sources: List<AnikageSource>? = null,
+    val subtitles: List<AnikageSubtitle>? = null,
+    val embeds: List<AnikageEmbed>? = null
+)
+
+data class AnikageSource(
+    val url: String? = null,
+    val quality: String? = null,
+    val isM3U8: Boolean? = null,
+    val type: String? = null
+)
+
+data class AnikageSubtitle(
+    val file: String? = null,
+    val label: String? = null
+)
+
+data class AnikageEmbed(
+    val url: String? = null
+)
