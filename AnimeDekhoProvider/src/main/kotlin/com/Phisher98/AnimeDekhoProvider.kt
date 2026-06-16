@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.amap
 import org.jsoup.nodes.Element
 
 open class AnimeDekhoProvider : MainAPI() {
@@ -141,9 +142,9 @@ open class AnimeDekhoProvider : MainAPI() {
         //VidStream
         val headers = mapOf("Cookie" to "toronites_server=vidstream")
         val doc = app.get(media.url, headers = headers).document
-        doc.select("iframe.serversel[src]").forEach { iframe ->
+        doc.select("iframe.serversel[src]").amap { iframe ->
             val serverUrl = iframe.attr("src")
-            if (serverUrl.isBlank()) return@forEach
+            if (serverUrl.isBlank()) return@amap
 
             val innerIframeUrl = runCatching {
                 app.get(serverUrl).document
@@ -169,8 +170,7 @@ open class AnimeDekhoProvider : MainAPI() {
             return false
         }
 
-        var success = false
-        for (i in 0..10) {
+        (0..10).toList().amap { i ->
             val iframeUrl = runCatching {
                 app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                     .document.selectFirst("iframe")?.attr("src")
@@ -179,7 +179,6 @@ open class AnimeDekhoProvider : MainAPI() {
                 Log.d("Error:", "Found iframe: $iframeUrl")
                 runCatching {
                     loadExtractor(iframeUrl, subtitleCallback, callback)
-                    success = true
                 }.onFailure {
                     Log.e("Error:", "Failed to load extractor for $iframeUrl $it")
                 }
@@ -188,7 +187,7 @@ open class AnimeDekhoProvider : MainAPI() {
             }
         }
 
-        return success
+        return true
     }
 
 

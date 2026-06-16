@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.amap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -284,16 +285,16 @@ open class Fibwatch : MainAPI() {
     ): Boolean {
         val loadData = tryParseJson<LoadlinksOut>(data) ?: return true
 
-        val currentUrls = loadData.current.map { it.url.trim() }.toSet()
+        val currentUrls = loadData.current.amap { it.url.trim() }.toSet()
         val combined = ArrayList<LoadItem>(loadData.current.size + loadData.popup.size)
 
         combined += loadData.current
         combined += loadData.popup.filter { it.url.trim() !in currentUrls }
 
-        for (item in combined) {
+        combined.amap { item ->
 
             val url = item.url.trim()
-            if (url.isEmpty()) continue
+            if (url.isEmpty()) return@amap
 
             val isDirectMedia = url.contains(".mkv", true) ||
                     url.contains(".mp4", true) ||
@@ -317,7 +318,7 @@ open class Fibwatch : MainAPI() {
 
             if (finalUrl.isNullOrEmpty()) {
                 Log.w(name, "no download url for $url")
-                continue
+                return@amap
             }
 
             callback.invoke(

@@ -119,7 +119,7 @@ class Toonhub4u : MainAPI() {
         val jsonArray = JSONArray(data)
         val links = List(jsonArray.length()) { jsonArray.getString(it) }
         coroutineScope {
-            links.map { link ->
+            links.amap { link ->
                 launch {
                     try {
                         loadExtractor(link, subtitleCallback, callback)

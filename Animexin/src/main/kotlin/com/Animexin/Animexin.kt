@@ -91,7 +91,7 @@ class Animexin : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select(".mobius option").forEach { server->
+        document.select(".mobius option").amap { server->
             val base64 = server.attr("value")
             val decoded=base64Decode(base64)
             val doc = Jsoup.parse(decoded)

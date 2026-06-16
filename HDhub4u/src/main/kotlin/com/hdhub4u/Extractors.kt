@@ -2,6 +2,7 @@ package com.hdhub4u
 
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.PixelDrain
@@ -136,7 +137,7 @@ open class Hblinks : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.select("h3 a,h5 a,div.entry-content p a").map {
+        app.get(url).document.select("h3 a,h5 a,div.entry-content p a").amap {
             val lower = it.absUrl("href").ifBlank { it.attr("href") }
             val href = lower.lowercase()
             when {
@@ -261,7 +262,7 @@ class HubCloud : ExtractorApi() {
             if (size.isNotEmpty()) append("[$size]")
         }
 
-        document.select("a.btn").forEach { element ->
+        document.select("a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.ownText()
             val label = text.lowercase()

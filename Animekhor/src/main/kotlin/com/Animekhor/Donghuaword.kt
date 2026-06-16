@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.amap
 
 
 class Donghuaword  : Animekhor() {
@@ -18,7 +19,7 @@ class Donghuaword  : Animekhor() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select("div.server-item a").map {
+        document.select("div.server-item a").amap {
             val base64=it.attr("data-hash")
             val decodedUrl = base64Decode(base64)
             val regex = Regex("""src=["']([^"']+)["']""",RegexOption.IGNORE_CASE)

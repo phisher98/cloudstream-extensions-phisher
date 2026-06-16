@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.amap
 
 class YTSMX : YTS(){
     override var mainUrl              = "https://yts.bz"
@@ -99,7 +100,7 @@ class YTSMX : YTS(){
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select("a.magnet-download.download-torrent.magnet").map {
+        document.select("a.magnet-download.download-torrent.magnet").amap {
             val magnet=it.attr("href")
             val quality =getIndexQuality(it.attr("title"))
 

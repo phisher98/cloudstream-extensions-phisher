@@ -102,18 +102,18 @@ class DoraBash : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
 
-        document.select("div.player-selection").forEach { container ->
+        document.select("div.player-selection").amap { container ->
 
             val type = when {
                 container.hasClass("player-dub") -> "DUB"
                 container.hasClass("player-sub") -> "SUB"
-                else -> return@forEach
+                else -> return@amap
             }
 
-            container.select("span[data-embed-id]").forEach { span ->
+            container.select("span[data-embed-id]").amap { span ->
                 val raw = span.attr("data-embed-id")
                 val parts = raw.split(":", limit = 2)
-                if (parts.size != 2) return@forEach
+                if (parts.size != 2) return@amap
                 val name = base64Decode(parts[0]).replace(type, ignoreCase = true, newValue = "")
                 val url  = base64Decode(parts[1])
                 Log.d("DoraBash","$name $type $url")

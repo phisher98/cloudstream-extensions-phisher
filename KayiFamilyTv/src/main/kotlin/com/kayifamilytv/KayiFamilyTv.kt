@@ -127,7 +127,7 @@ class KayiFamilyTv: MainAPI() {
     ): Boolean {
          val document = app.get(data).document
 
-         document.select("#mvp-content-wrap iframe").forEach { iframe ->
+         document.select("#mvp-content-wrap iframe").amap { iframe ->
              val iframeUrl = sequenceOf(
                  iframe.attr("data-src"),
                  iframe.attr("data-litespeed-src"),

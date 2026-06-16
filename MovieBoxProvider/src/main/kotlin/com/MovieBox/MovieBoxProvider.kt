@@ -40,6 +40,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.amap
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -661,8 +662,8 @@ class MovieBoxProvider : MainAPI() {
 
             //var hasAnyLinks = false
 
-            // Process each subjectId (including dubs)
-            for ((subjectId, language) in subjectIds) {
+            // Process each subjectId (including dubs) - concurrent
+            subjectIds.amap { (subjectId, language) ->
                 try {
                     val url = "$mainUrl/wefeed-mobile-bff/subject-api/play-info?subjectId=$subjectId&se=$season&ep=$episode"
 
@@ -837,7 +838,7 @@ class MovieBoxProvider : MainAPI() {
                         }
                     }
                 } catch (_: Exception) {
-                    continue
+                    return@amap
                 }
             }
             

@@ -470,7 +470,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         return "$mainUrl/$query"
     }
 
-    fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
+    suspend fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
 
         val debridProvider = sharedPref.getString("debrid_provider", "") ?: ""
         val debridKey = sharedPref.getString("debrid_key", "") ?: ""
@@ -481,7 +481,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         // preferred languages
         val preferredLanguages = JSONArray().apply {
             if (languagesPref.isNotEmpty()) {
-                languagesPref.split(",").forEach { put(it.lowercase()) }
+                languagesPref.split(",").amap { put(it.lowercase()) }
             } else {
                 put("en")
                 put("multi")

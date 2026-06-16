@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.amap
 import org.jsoup.nodes.Element
 
 class FivemovierulzProvider : MainAPI() { // all providers must be an instance of MainAPI
@@ -94,7 +95,7 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
             .mapNotNull { it.attr("href") }
             .filter { it.isNotBlank() }
 
-        for (link in links) {
+        links.amap { link ->
             Log.d("Phisher",link)
             loadExtractor(
                 link,

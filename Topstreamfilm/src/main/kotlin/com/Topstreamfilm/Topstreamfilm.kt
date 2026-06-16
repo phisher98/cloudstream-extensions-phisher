@@ -112,14 +112,14 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
         if (data.startsWith("["))
         {
             val urls = extractUrlsWithMapNotNull(data)
-            urls.map {
+            urls.amap {
                 loadExtractor(it, subtitleCallback, callback)
             }
 
         }
         else {
             val iframe = app.get(data).document.select("div.TPlayer iframe").attr("src")
-            app.get(iframe).document.select("ul li").map {
+            app.get(iframe).document.select("ul li").amap {
                 val href = httpsify(it.attr("data-link"))
                 loadExtractor(href, subtitleCallback, callback)
             }

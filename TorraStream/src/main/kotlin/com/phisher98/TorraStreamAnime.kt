@@ -47,6 +47,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
+import com.lagradost.cloudstream3.amap
 
 open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI() {
     override var name = "TorraStream-Anime"
@@ -511,7 +512,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         return "$mainUrl/$query"
     }
 
-    fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
+    suspend fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
 
         val debridProvider = sharedPref.getString("debrid_provider", "") ?: ""
         val debridKey = sharedPref.getString("debrid_key", "") ?: ""
@@ -522,7 +523,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         // preferred languages
         val preferredLanguages = JSONArray().apply {
             if (languagesPref.isNotEmpty()) {
-                languagesPref.split(",").forEach { put(it.lowercase()) }
+                languagesPref.split(",").amap { put(it.lowercase()) }
             } else {
                 put("en")
                 put("multi")

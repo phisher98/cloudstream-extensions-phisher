@@ -43,6 +43,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.SubsExtractors.invokeOpenSubs
 import com.phisher98.SubsExtractors.invokeWatchsomuch
 import java.util.Calendar
+import com.lagradost.cloudstream3.amap
 
 class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
     override var mainUrl = "https://example.com"
@@ -300,7 +301,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
             runCatching {
                 app.get(url, timeout = 10L).parsedSafe<StreamsResponse>()
             }.onSuccess { res ->
-                res?.streams?.forEach { stream ->
+                res?.streams?.amap { stream ->
                     stream.runCallback(subtitleCallback, callback)
                 }
             }.onFailure { _ ->
@@ -355,12 +356,12 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                         this.headers=behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers ?: mapOf()
                     }
                 )
-                subtitles.map { sub ->
+                subtitles.amap { sub ->
                     subtitleCallback.invoke(
                         newSubtitleFile(
                             SubtitleHelper.fromTagToEnglishLanguageName(sub.lang ?: "") ?: sub.lang
                             ?: "",
-                            sub.url ?: return@map
+                            sub.url ?: return@amap
                         )
                     )
                 }
@@ -380,7 +381,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
 
                 val sourceTrackers = sources
                     .filter { it.startsWith("tracker:") }
-                    .map { it.removePrefix("tracker:") }
+                    .amap { it.removePrefix("tracker:") }
                     .filter { s -> s.isNotEmpty() }.joinToString("") { "&tr=$it" }
 
                 val magnet = "magnet:?xt=urn:btih:${infoHash}${sourceTrackers}${otherTrackers}"

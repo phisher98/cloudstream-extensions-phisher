@@ -30,6 +30,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
+import com.lagradost.cloudstream3.amap
 
 
 class AnizoneProvider(private val sharedPref: SharedPreferences? = null) : MainAPI() {
@@ -158,7 +159,7 @@ class AnizoneProvider(private val sharedPref: SharedPreferences? = null) : MainA
                 if (prefLanguage != "0" && json.has(prefLanguage)) {
                     title = json.getString(prefLanguage)
                 }
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
         }
         
         // Try to get title from window.getTitle fallback
@@ -176,7 +177,7 @@ class AnizoneProvider(private val sharedPref: SharedPreferences? = null) : MainA
                 try {
                     val json = JSONObject(cleanJson)
                     title = json.keys().asSequence().firstOrNull()?.let { json.getString(it) } ?: ""
-                } catch (e: Exception) {}
+                } catch (_: Exception) {}
             }
         }
         return title
@@ -287,7 +288,7 @@ class AnizoneProvider(private val sharedPref: SharedPreferences? = null) : MainA
         val mediaPlayer = web.selectFirst("media-player")
         val m3U8 = mediaPlayer?.attr("src") ?: ""
 
-        mediaPlayer?.select("track")?.forEach {
+        mediaPlayer?.select("track")?.amap {
             subtitleCallback.invoke(
                 newSubtitleFile (
                     it.attr("label"),

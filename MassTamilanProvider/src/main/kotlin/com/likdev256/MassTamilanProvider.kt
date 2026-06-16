@@ -162,7 +162,7 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        parseJson<ArrayList<MassTamilanLinks>>(data).map {
+        parseJson<ArrayList<MassTamilanLinks>>(data).amap {
             //val mp3Stream = app.get(data, allowRedirects = true)
             safeApiCall {
                 callback.invoke(

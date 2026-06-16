@@ -21,6 +21,7 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.amap
 
 class Piratexplay : MainAPI() {
     override var mainUrl = "https://piratexplay.cc"
@@ -131,7 +132,7 @@ class Piratexplay : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        document.select("iframe").forEach {
+        document.select("iframe").amap {
             val link=it.attr("src").ifBlank { it.attr("data-src") }.substringAfterLast("url=")
             loadExtractor(link, mainUrl, subtitleCallback, callback)
         }

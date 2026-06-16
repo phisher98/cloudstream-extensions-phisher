@@ -27,6 +27,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.amap
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
@@ -136,12 +137,12 @@ class AllWish : MainAPI() {
         val res = app.get("$mainUrl/ajax/server/list?servers=$id", xmlHeader).parsedSafe<APIResponse>()
 
         if (res?.status == 200) {
-            res.html.select("div.server-type").forEach { section ->
+            res.html.select("div.server-type").amap { section ->
                 val sectionType = section.attr("data-type") // sub/dub
                 val isHardSub = section.selectFirst("span")?.text()?.contains("H-Sub", ignoreCase = true) ?: false
 
                 if (type.contains(sectionType)) {
-                    section.select("div.server-list > div.server").forEach { server ->
+                    section.select("div.server-list > div.server").amap { server ->
                         //val serverName = server.selectFirst("div > span")?.text() ?: ""
                         val dataId = server.attr("data-link-id")
                         val apiRes = app.get("$mainUrl/ajax/server?get=$dataId", xmlHeader)

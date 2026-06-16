@@ -22,6 +22,7 @@ import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.lagradost.cloudstream3.amap
 
 class Animecloud : MainAPI() {
     override var mainUrl              = "https://fireani.me"
@@ -184,7 +185,7 @@ class Animecloud : MainAPI() {
         """.trimIndent()
 
         app.post("$mainUrl/api.v1.anime.AnimeService/GetEpisode", requestBody = json.toRequestBody("application/json".toMediaType())).
-        parsedSafe<Loadlinks>()?.data?.animeEpisodeLinks?.forEach {
+        parsedSafe<Loadlinks>()?.data?.animeEpisodeLinks?.amap {
             val dubtype=it.lang
             val href=it.link
             loadSourceNameExtractor("$name ${dubtype.uppercase()}",href, "", subtitleCallback, callback, quality = "1080P")

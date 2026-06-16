@@ -301,7 +301,7 @@ class CloudPlay : MainAPI() {
                     if (channel.headers != null) {
                         this.headers = channel.headers
                     }
-                    channel.headers?.forEach { (key, value) ->
+                    channel.headers?.amap { (key, value) ->
                         if (key.equals("referer", ignoreCase = true)) {
                             this.referer = value
                         }

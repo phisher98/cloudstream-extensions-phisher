@@ -33,6 +33,7 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 import java.text.Normalizer
+import com.lagradost.cloudstream3.amap
 
 class Movies4u : MainAPI() {
     override var mainUrl: String = runBlocking {
@@ -368,7 +369,7 @@ class Movies4u : MainAPI() {
         {
             val links = tryParseJson<List<String>>(data)
             if (links.isNullOrEmpty()) return false
-            links.forEach { link ->
+            links.amap { link ->
                 if (link.isNotBlank()) { loadExtractor(link, name, subtitleCallback, callback)
                 }
             }

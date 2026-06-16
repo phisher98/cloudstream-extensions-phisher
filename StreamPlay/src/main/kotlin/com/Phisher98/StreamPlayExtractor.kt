@@ -49,7 +49,6 @@ import org.jsoup.select.Elements
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.util.Collections
 import java.util.Locale
@@ -1840,7 +1839,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
 
         fun quote(text: String): String {
-            return URLEncoder.encode(text, StandardCharsets.UTF_8.toString())
+            return URLEncoder.encode(text)
                 .replace("+", "%20")
         }
 
@@ -5589,6 +5588,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 ) {
                                     this.quality = getQualityFromName(qualityStr)
                                     this.referer = "https://anikage.cc/"
+                                    this.headers = mapOf("Origin" to "https://anikage.cc/")
                                 }
                             )
                         }

@@ -209,7 +209,7 @@ class HubCloud : ExtractorApi() {
             if (size.isNotEmpty()) append("[$size]")
         }
 
-        document.select("a.btn").forEach { element ->
+        document.select("a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.ownText()
             val label = text.lowercase()

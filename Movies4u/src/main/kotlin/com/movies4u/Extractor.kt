@@ -37,7 +37,7 @@ class Filesdl : ExtractorApi() {
         val titleText = res.select("div.title").text()
         val qualityRegex = Regex("(\\d{3,4}p)", RegexOption.IGNORE_CASE)
         val quality = qualityRegex.find(titleText)?.value ?: "Unknown"
-        res.select("div.container a").map {
+        res.select("div.container a").amap {
             val source = it.text()
             val href = it.attr("href")
             when {
@@ -93,7 +93,7 @@ class M4ulinks : ExtractorApi() {
         callback: (ExtractorLink) -> Unit)
     {
         val res = app.get(url).document
-        res.select("div.downloads-btns-div a").forEach {
+        res.select("div.downloads-btns-div a").amap {
             val href = it.attr("href")
             loadExtractor(href,"",subtitleCallback,callback)
         }
@@ -153,7 +153,7 @@ open class HubCloud : ExtractorApi() {
             if (size.isNotEmpty()) append("[$size]")
         }
 
-        document.select("a.btn").forEach { element ->
+        document.select("a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.ownText()
             val label = text.lowercase()

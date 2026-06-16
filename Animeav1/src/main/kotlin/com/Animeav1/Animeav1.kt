@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.amap
 
 class Animeav1 : MainAPI() {
     override var mainUrl              = "https://animeav1.com"
@@ -182,7 +183,7 @@ class Animeav1 : MainAPI() {
             val subEmbeds = extractLinks("SUB")
             val dubEmbeds = extractLinks("DUB")
 
-            subEmbeds.forEach { (server, url) ->
+            subEmbeds.amap { (server, url) ->
                 loadCustomExtractor(
                     "Animeav1 [SUB:$server]",
                     url,
@@ -192,7 +193,7 @@ class Animeav1 : MainAPI() {
                 )
             }
 
-            dubEmbeds.forEach { (server, url) ->
+            dubEmbeds.amap { (server, url) ->
                 loadCustomExtractor(
                     "Animeav1 [DUB:$server]",
                     url,

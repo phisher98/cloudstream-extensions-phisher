@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.amap
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -147,19 +148,19 @@ open class Donghuastream : MainAPI() {
 
         val options = html.select("option[data-index]")
 
-        for (option in options) {
+        options.amap { option ->
             val base64 = option.attr("value")
-            if (base64.isBlank()) continue
+            if (base64.isBlank()) return@amap
             val label = option.text().trim()
             val decodedHtml = try {
                 base64Decode(base64)
             } catch (_: Exception) {
                 Log.w("Error", "Base64 decode failed: $base64")
-                continue
+                return@amap
             }
 
             val iframeUrl = Jsoup.parse(decodedHtml).selectFirst("iframe")?.attr("src")?.let(::httpsify)
-            if (iframeUrl.isNullOrEmpty()) continue
+            if (iframeUrl.isNullOrEmpty()) return@amap
             when {
                 "vidmoly" in iframeUrl -> {
                     val cleanedUrl = "http:" + iframeUrl.substringAfter("=\"").substringBefore("\"")

@@ -31,6 +31,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONArray
 import org.json.JSONObject
+import com.lagradost.cloudstream3.amap
 
 class MovieBlast : MainAPI() {
     override var mainUrl = base64Decode("aHR0cHM6Ly9hcHAuY2xvdWQtbWIueHl6")
@@ -263,7 +264,7 @@ class MovieBlast : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val links = tryParseJson<List<LoadURL>>(data) ?: emptyList()
-        links.forEach { loadUrl ->
+        links.amap { loadUrl ->
             if (loadUrl.link!=null)
             {
                 val headers = mapOf(

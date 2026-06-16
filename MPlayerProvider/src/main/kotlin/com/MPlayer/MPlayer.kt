@@ -26,6 +26,7 @@ import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import com.lagradost.cloudstream3.amap
 
 class MPlayer : MainAPI() {
     override val supportedTypes = setOf(
@@ -436,7 +437,7 @@ class MPlayer : MainAPI() {
                 listOf(data) // fallback to single link
             }
         } else listOf(data)
-        urls.forEach { url ->
+        urls.amap { url ->
             val label = if (url.contains(".m3u8")) "HLS"
             else if (url.contains(".mpd")) "DASH"
             else ""

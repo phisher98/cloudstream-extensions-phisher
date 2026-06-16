@@ -18,6 +18,7 @@ import com.phisher98.TorraStream.Companion.TorrentsDB
 import com.phisher98.TorraStream.Companion.Uindex
 import org.json.JSONArray
 import org.json.JSONObject
+import com.lagradost.cloudstream3.amap
 
 class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvider() {
     override var name = "TorraStream"
@@ -140,7 +141,7 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
         return "$mainUrl/$query"
     }
 
-    fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
+    suspend fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
 
         val debridProvider = sharedPref.getString("debrid_provider", "") ?: ""
         val debridKey = sharedPref.getString("debrid_key", "") ?: ""
@@ -151,7 +152,7 @@ class TorraStreamTrakt(private val sharedPref: SharedPreferences) : TraktProvide
         // preferred languages
         val preferredLanguages = JSONArray().apply {
             if (languagesPref.isNotEmpty()) {
-                languagesPref.split(",").forEach { put(it.lowercase()) }
+                languagesPref.split(",").amap { put(it.lowercase()) }
             } else {
                 put("en")
                 put("multi")

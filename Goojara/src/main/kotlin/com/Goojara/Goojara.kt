@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.amap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -272,12 +273,12 @@ class Goojara : MainAPI() {
         val cookieMap = parseSetCookieHeaders(listOf(setCookieHeader))
         val randomPair = extract3chkPair(bodyHtml)
         val cookieHeader = buildCookieHeader(cookieMap["aGooz"], randomPair)
-        doc.select("#drl a").forEach { element ->
+        doc.select("#drl a").amap { element ->
             val href = element.attr("href")
-            if (href.isEmpty()) return@forEach
+            if (href.isEmpty()) return@amap
             try {
                 val redirectResp = app.get(href, mapOf("Referer" to "https://ww1.goojara.to", "Cookie" to cookieHeader), allowRedirects = false)
-                val iframe = redirectResp.headers["location"] ?: redirectResp.headers["Location"] ?: return@forEach
+                val iframe = redirectResp.headers["location"] ?: redirectResp.headers["Location"] ?: return@amap
                 Log.d("Phisher", iframe)
                 loadSourceNameExtractor("", iframe, "", Qualities.P720.value, subtitleCallback, callback)
             } catch (e: Exception) {

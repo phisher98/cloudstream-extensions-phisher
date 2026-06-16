@@ -168,7 +168,7 @@ class Netcinez : MainAPI() {
             return false
         }
 
-        for (button in buttons) {
+        buttons.amap { button ->
             val intermediateUrl = button.absUrl("href")
 
             val label = button.text().trim()

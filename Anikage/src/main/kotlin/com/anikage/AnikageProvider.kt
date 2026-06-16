@@ -144,16 +144,16 @@ class AnikageProvider : MainAPI() {
         } catch (_: Exception) {
             emptyList()
         }
-        val providers = serversData.map { it.id }.takeIf { it.isNotEmpty() } ?: listOf("megg", "miko", "anya", "verse", "neko")
+        val providers = serversData.amap { it.id }.takeIf { it.isNotEmpty() } ?: listOf("megg", "miko", "anya", "verse", "neko")
 
-        providers.map { provider ->
+        providers.amap { provider ->
             async {
                 val sourceUrl = "$mainUrl/api/media/anime/${epData.slug}/episodes/${epData.number}/sources?lang=$lang&provider=$provider"
                     try {
                         val res = app.get(sourceUrl).text
                         val sourceData = parseJson<EpisodeSource>(res)
                         
-                        sourceData.subtitles?.forEach { sub ->
+                        sourceData.subtitles?.amap { sub ->
                             subtitleCallback(newSubtitleFile(sub.label ?: lang, "https://prox.anikage.cc/vtt/${sub.file}"))
                         }
 
@@ -162,7 +162,7 @@ class AnikageProvider : MainAPI() {
                         } else ""
                         val baseNameStr = "Anikage ${provider.replaceFirstChar { it.uppercase() }} $subType".trim()
 
-                        sourceData.sources?.forEach { src ->
+                        sourceData.sources?.amap { src ->
                             val isM3u8 = src.isM3U8 == true
                             val videoUrl = "https://prox.anikage.cc/${if(isM3u8) "m3u8" else "stream"}/${src.url}"
                             
@@ -181,7 +181,7 @@ class AnikageProvider : MainAPI() {
                             )
                         }
                         
-                        sourceData.embeds?.forEach { embed ->
+                        sourceData.embeds?.amap { embed ->
                             loadExtractor(embed.url, "$mainUrl/", subtitleCallback, callback)
                         }
                     } catch (_: Exception) {

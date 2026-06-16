@@ -39,6 +39,8 @@ import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.Normalizer
+import com.lagradost.cloudstream3.amap
+import kotlin.time.Duration.Companion.milliseconds
 
 class IdlixProvider : MainAPI() {
     override var mainUrl = base64Decode("aHR0cHM6Ly96Mi5pZGxpeGt1LmNvbQ==")
@@ -329,7 +331,7 @@ class IdlixProvider : MainAPI() {
         var elapsed = 0L
         while (elapsed < totalWait) {
             Log.d(name, "Waiting: ${elapsed}s / ${totalWait}s")
-            delay(1000)
+            delay(1000.milliseconds)
             elapsed++
         }
 
@@ -374,7 +376,7 @@ class IdlixProvider : MainAPI() {
                 ).forEach(callback)
             }
 
-        iframeResponse.subtitles.forEach { subtitle ->
+        iframeResponse.subtitles.amap { subtitle ->
             subtitleCallback(
                 newSubtitleFile(
                     subtitle.label,

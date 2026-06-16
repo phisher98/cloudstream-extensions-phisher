@@ -361,7 +361,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
             }
             ?: return false
         val m3u8Links = payload.items
-        m3u8Links.forEach {
+        m3u8Links.amap {
             safeApiCall {
                 val headers = mapOf(
                     "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",

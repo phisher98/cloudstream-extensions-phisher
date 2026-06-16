@@ -201,8 +201,8 @@ class Animedubhindi : MainAPI() {
     ): Boolean {
         Log.d("Phisher",data.toJson())
         val links = tryParseJson<List<Map<String, String>>>(data) ?: return false
-        links.forEach { item ->
-            val url = item["url"] ?: return@forEach
+        links.amap { item ->
+            val url = item["url"] ?: return@amap
             loadExtractor(url, url, subtitleCallback, callback
             )
         }

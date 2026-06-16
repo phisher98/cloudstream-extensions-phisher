@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.amap
 import org.jsoup.nodes.Element
 
 open class OnepaceProvider : MainAPI() {
@@ -127,10 +128,10 @@ open class OnepaceProvider : MainAPI() {
         val media = parseJson<Media>(data)
         val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
         val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
-        for (i in 0..4) {
+        (0..4).toList().amap { i ->
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
-                ?: throw ErrorLoadingException("no iframe found")
+                ?: return@amap
             loadExtractor(link,subtitleCallback, callback)
         }
         return true

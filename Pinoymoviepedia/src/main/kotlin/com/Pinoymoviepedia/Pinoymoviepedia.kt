@@ -83,7 +83,7 @@ open class Pinoymoviepedia : MainAPI() {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
             val href = getProperLink(it.selectFirst("div.title > a")!!.attr("href"))
-            val posterUrl = it.selectFirst("img")!!.attr("src").toString()
+            val posterUrl = it.selectFirst("img")!!.attr("src")
             newMovieSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
             }
@@ -133,7 +133,7 @@ open class Pinoymoviepedia : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
             Log.d("Phisher",data)
-            app.get(data).document.select("div.pframe iframe").forEach {
+            app.get(data).document.select("div.pframe iframe").amap {
                 val href=it.attr("src")
                 Log.d("Phisher",href)
                 loadExtractor(

@@ -265,7 +265,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         } else {
             val sources = parseJson<ArrayList<UHDLinks>>(data)
 
-            sources.forEach { me ->
+            sources.amap { me ->
                 launch {
                     runCatching {
                         val link = me.sourceLink

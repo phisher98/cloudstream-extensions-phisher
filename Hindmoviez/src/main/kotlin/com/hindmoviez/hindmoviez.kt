@@ -331,7 +331,7 @@ class Hindmoviez : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val links: List<String> = tryParseJson<List<String>>(data) ?: return true
-        val allRequests = links.flatMap { pageUrl ->
+        val allRequests = links.amap { pageUrl ->
             val pageDoc = app.get(pageUrl, timeout = 10000L).document
 
             val name: String = pageDoc.selectFirst("div.container p:contains(Name:)")
@@ -340,7 +340,7 @@ class Hindmoviez : MainAPI() {
                 ?.trim()
                 .orEmpty()
 
-            if (name.isBlank()) return@flatMap emptyList()
+            if (name.isBlank()) return@amap emptyList()
 
             val extractedSpecs: String = buildExtractedTitle(extractSpecs(name))
             val fileSize: String = pageDoc.selectFirst("div.container p:contains(Size:)")
@@ -354,7 +354,7 @@ class Hindmoviez : MainAPI() {
                 .map { btnUrl ->
                     Triple(btnUrl, extractedSpecs, fileSize)
                 }
-        }
+        }.flatten()
 
         allRequests.amap { (btnUrl, extractedSpecs, fileSize) ->
             if (btnUrl.contains("gdshine"))

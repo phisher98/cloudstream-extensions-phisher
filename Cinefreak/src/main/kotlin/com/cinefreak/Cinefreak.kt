@@ -30,6 +30,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.amap
 import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 import java.net.URI
@@ -583,8 +584,8 @@ open class Cinefreak : MainAPI() {
             ?.let { tryParseJson<List<EpisodeLinkHrefs>>(it) }
             ?: return false
 
-        links.forEach { link ->
-            if (links.isEmpty()) return false
+        if (links.isEmpty()) return false
+        links.amap { link ->
 
             val decoded = runCatching {
                 base64Decode(
@@ -592,12 +593,12 @@ open class Cinefreak : MainAPI() {
                         .find(fixUrl(link.url))
                         ?.groupValues
                         ?.getOrNull(1)
-                        ?: return@forEach
+                        ?: return@amap
                 )
             }.getOrNull()
                 ?.substringBefore("newgo32")
                 ?.trim()
-                ?: return@forEach
+                ?: return@amap
 
             when {
                 "neodrive" in decoded -> {

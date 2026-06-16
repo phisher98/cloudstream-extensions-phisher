@@ -27,6 +27,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.amap
 
 class Anineko : MainAPI() {
     override var mainUrl = "https://anineko.to"
@@ -229,8 +230,8 @@ class Anineko : MainAPI() {
             listOf(doc)
         }
 
-        targetPanels.forEach { panel ->
-            panel.select(".server-video").forEach { serverBtn ->
+        targetPanels.amap { panel ->
+            panel.select(".server-video").amap { serverBtn ->
                 val videoUrl = serverBtn.attr("data-video")
                 val serverName = serverBtn.ownText().trim()
                 val typeName = serverBtn.selectFirst("span")?.text()

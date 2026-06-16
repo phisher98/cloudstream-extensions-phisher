@@ -124,7 +124,7 @@ class Toonstream : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select("#aa-options > div > iframe").forEach {
+        document.select("#aa-options > div > iframe").amap {
             val serverlink=it.attr("data-src")
             val truelink= app.get(serverlink).document.selectFirst("iframe")?.attr("src") ?:""
             Log.d("Phisher",truelink)
