@@ -38,6 +38,10 @@ class AniDb : MainAPI() {
     override val hasMainPage = true
 
     override val mainPage = mainPageOf(
+        "$mainUrl/browse?q=&type=&status=&season=&year=&genres=&sort=order_top_airing&page=" to "Top Airing",
+        "$mainUrl/browse?q=&type=&status=&season=&year=&genres=&sort=order_popular&page=" to "Popular",
+        "$mainUrl/browse?q=&type=&status=&season=&year=&genres=&sort=order_updated&page=" to "Recently Updated",
+        "$mainUrl/browse?q=&type=&status=&season=&year=&genres=&sort=aired_start&page=" to "Recently Aired",
         "$mainUrl/browse?q=&type=&status=Currently+Airing&season=&year=&genres=&sort=order_favorite&page=" to "Currently Airing",
         "$mainUrl/browse?type=TV&page=" to "TV Series",
         "$mainUrl/browse?type=Movie&page=" to "Movies",
@@ -46,7 +50,6 @@ class AniDb : MainAPI() {
         "$mainUrl/browse?type=Special&page=" to "Specials",
         "$mainUrl/browse?q=&type=&status=Finished+Airing&season=&year=&genres=&sort=order_favorite&page=" to "Finished Airing"
     )
-
     private fun searchResponseBuilder(res: Document): List<AnimeSearchResponse> {
         val results = mutableListOf<AnimeSearchResponse>()
         res.select("a.anime-card").forEach { item ->
@@ -65,7 +68,7 @@ class AniDb : MainAPI() {
         return results
     }
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = request.data + page.toString()
         val res = app.get(url).document
         val searchRes = searchResponseBuilder(res)
