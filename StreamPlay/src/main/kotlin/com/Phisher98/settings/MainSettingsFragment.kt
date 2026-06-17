@@ -7,8 +7,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.edit
 import androidx.fragment.app.DialogFragment
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.phisher98.settings.SettingsFragment
 import com.phisher98.settings.ToggleFragment
 import com.phisher98.settings.WyzieSettingsFragment
@@ -87,6 +90,10 @@ class MainSettingsFragment(
 
         val saveIcon: ImageView = view.findView("saveIcon")
 
+        val sourceToggleRow: View = view.findView("sourceToggleRow")
+        val sourceToggleTitle: TextView = view.findView("sourceToggleTitle")
+        val sourceToggleIcon: ImageView = view.findView("sourceToggleIcon")
+
         loginCard.setImageDrawable(getDrawable("settings_icon"))
         wyzieCard.setImageDrawable(getDrawable("settings_icon"))
         languagechange.setImageDrawable(getDrawable("settings_icon"))
@@ -96,6 +103,7 @@ class MainSettingsFragment(
         stremioaddonstreams.setImageDrawable(getDrawable("settings_icon"))
         performance.setImageDrawable(getDrawable("settings_icon"))
         saveIcon.setImageDrawable(getDrawable("save_icon"))
+        sourceToggleIcon.setImageDrawable(getDrawable("settings_icon"))
 
         loginRow.background = getDrawable("settings_item_background")
         wyzieRow.background = getDrawable("settings_item_background")
@@ -105,6 +113,17 @@ class MainSettingsFragment(
         stremioaddonsRow.background = getDrawable("settings_item_background")
         stremioaddonstreamsRow.background = getDrawable("settings_item_background")
         performanceRow.background = getDrawable("settings_item_background")
+        sourceToggleRow.background = getDrawable("settings_item_background")
+
+        val isTrakt = sharedPref.getBoolean("use_trakt_source", false)
+        sourceToggleTitle.text = if (isTrakt) "Source: Trakt" else "Source: TMDB"
+
+        sourceToggleRow.setOnClickListener {
+            val newIsTrakt = !sharedPref.getBoolean("use_trakt_source", false)
+            sharedPref.edit { putBoolean("use_trakt_source", newIsTrakt) }
+            sourceToggleTitle.text = if (newIsTrakt) "Source: Trakt" else "Source: TMDB"
+            showToast("Source changed to ${if (newIsTrakt) "Trakt" else "TMDB"}. Save & Restart to apply.")
+        }
 
         saveIcon.makeTvCompatible()
         val showSubFragment = { fragmentCreator: (() -> Unit) -> DialogFragment, tag: String ->

@@ -1,4 +1,4 @@
-﻿package com.phisher98
+package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
@@ -56,8 +56,11 @@ class StreamPlayPlugin: Plugin() {
             }
             Log.d("StreamPlay", "⚙️ Set recommended concurrency: $recommended")
         }
+        val useTrakt = sharedPref.getBoolean("use_trakt_source", false)
+        val mainStreamPlay = if (useTrakt) StreamPlayTrakt(sharedPref) else StreamPlay(sharedPref)
+
         val mainApis = listOf(
-            StreamPlay(sharedPref),
+            mainStreamPlay,
             StreamPlayAnime()
         )
         val savedSet = sharedPref.getStringSet("enabled_plugins_saved", null)

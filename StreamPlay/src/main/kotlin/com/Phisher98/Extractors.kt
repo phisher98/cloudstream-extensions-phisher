@@ -325,11 +325,24 @@ class VCloud : ExtractorApi() {
                 app.get(url).document.selectFirst("div.main h4 a")?.attr("href")
             }.getOrNull() ?: return
         }
-
+        Log.d("Phisher",href)
         val doc = runCatching { app.get(href).document }.getOrNull() ?: return
         val scriptTag = doc.selectFirst("script:containsData(url)")?.data() ?: ""
-        val urlValue = Regex("var url = '([^']*)'").find(scriptTag)?.groupValues?.getOrNull(1).orEmpty()
+
+        val urlValue =
+            Regex("""atob\(atob\('([^']+)'\)\)""")
+                .find(scriptTag)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.let { runCatching { base64Decode(base64Decode(it)) }.getOrNull() }
+                ?: Regex("""var\s+url\s*=\s*'([^']*)'""")
+                    .find(scriptTag)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    .orEmpty()
+
         if (urlValue.isEmpty()) return
+        Log.d("Phisher",urlValue)
 
         val document = runCatching { app.get(urlValue).document }.getOrNull() ?: return
         val size = document.selectFirst("i#size")?.text().orEmpty()
@@ -348,6 +361,8 @@ class VCloud : ExtractorApi() {
             val link = it.attr("href")
             val text = it.text()
             val quality = getIndexQuality(header)
+            Log.d("Phisher",link)
+            Log.d("Phisher",text)
 
             when {
                 text.contains("FSLv2", ignoreCase = true) -> {
