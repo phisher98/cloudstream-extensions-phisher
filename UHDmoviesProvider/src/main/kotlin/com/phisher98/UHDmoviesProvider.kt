@@ -1,25 +1,46 @@
 package com.phisher98
 
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import org.json.JSONObject
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.BuildConfig
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.fixUrl
+import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.network.CloudflareKiller
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.NiceResponse
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
+import org.jsoup.nodes.Element
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl: String = runBlocking {
@@ -75,7 +96,13 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw
         val href = fixUrl(this.select("div.entry-image > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.entry-image > a > img").attr("src"))
+        val img = this.selectFirst("div.entry-image > a > img")
+
+        val posterUrl = fixUrlNull(
+            img?.attr("data-src")
+                ?.takeIf { it.isNotBlank() }
+                ?: img?.attr("src")
+        )
         val quality = getSearchQuality(titleRaw)
         return if (titleRaw.contains("season|S0", true) || titleRaw.contains("episode", true) || titleRaw.contains("S0", true)) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
@@ -297,7 +324,7 @@ suspend fun fetchIds(
     val searchUrl = buildString {
         append("$TMDB_API/search/$type")
         append("?api_key=$TMDB_API_KEY")
-        append("&query=${title.urlEncode()}")
+        append("&query=${title}")
         if (year != null) {
             append(if (isSeries) "&first_air_date_year=$year" else "&year=$year")
         }
@@ -324,7 +351,6 @@ data class IdResult(
     val imdbId: String?
 )
 
-fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
 
 private suspend fun fetchMetaData(imdbId: String?, type: TvType): JsonNode? {
     if (imdbId.isNullOrBlank()) return null
