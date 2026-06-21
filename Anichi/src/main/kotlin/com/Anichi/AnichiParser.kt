@@ -2,6 +2,7 @@ package com.Anichi
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import kotlinx.serialization.Serializable
 
 object AnichiParser {
 
@@ -190,27 +191,32 @@ object AnichiParser {
             @param:JsonProperty("raw") val raw: List<String>
     )
 
-    data class LinksQuery(@param:JsonProperty("data") val data: LinkData? = LinkData())
-
-    data class LinkData(@param:JsonProperty("episode") val episode: Episode? = Episode())
-
-    data class SourceUrls(
-        @param:JsonProperty("sourceUrl") val sourceUrl: String? = null,
-        @param:JsonProperty("downloads") val downloads: Downloads? = null,
-        @param:JsonProperty("priority") val priority: Double? = null, // 5.5 is a Float/Double
-        @param:JsonProperty("sourceName") val sourceName: String? = null,
-        @param:JsonProperty("type") val type: String? = null,
-        @param:JsonProperty("className") val className: String? = null,
-        @param:JsonProperty("streamerId") val streamerId: String? = null
+    data class LinksQuery(
+        val data: LinkData? = null,
+        val episode: Episode? = null
     )
 
-    data class Downloads(
-        @param:JsonProperty("sourceName") val sourceName: String? = null,
-        @param:JsonProperty("downloadUrl") val downloadUrl: String? = null
+    data class LinkData(
+        val episode: Episode? = null
     )
 
     data class Episode(
-            @param:JsonProperty("sourceUrls") val sourceUrls: ArrayList<SourceUrls> = arrayListOf(),
+        val sourceUrls: ArrayList<SourceUrls> = arrayListOf()
+    )
+
+    data class SourceUrls(
+        val sourceUrl: String? = null,
+        val downloads: Downloads? = null,
+        val priority: Double? = null,
+        val sourceName: String? = null,
+        val type: String? = null,
+        val className: String? = null,
+        val streamerId: String? = null
+    )
+
+    data class Downloads(
+        val sourceName: String? = null,
+        val downloadUrl: String? = null
     )
 
 }
@@ -262,4 +268,15 @@ data class AnichiDownloadLink(
     val resolutionStr: String,
     val priority: Long,
     val src: String?,
+)
+
+@Serializable
+data class EncryptedResponse(
+    val data: EncryptedData? = null
+)
+
+@Serializable
+data class EncryptedData(
+    val _m: String? = null,
+    val tobeparsed: String? = null
 )

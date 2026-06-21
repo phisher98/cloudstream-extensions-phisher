@@ -9,7 +9,6 @@ import com.Anichi.AnichiParser.Edges
 import com.Anichi.AnichiParser.JikanResponse
 import com.Anichi.AnichiUtils.aniToMal
 import com.Anichi.AnichiUtils.getTracker
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorRole
 import com.lagradost.cloudstream3.AnimeSearchResponse
@@ -366,9 +365,6 @@ open class Anichi : MainAPI() {
         const val maipageshaHash="a24c500a1b765c68ae1d8dd85174931f661c71369c89b92b88b75a725afc471c"
         val headers =
                 mapOf(
-                        "app-version" to "android_c-247",
-                        "from-app" to BuildConfig.ANICHI_APP,
-                        "platformstr" to "android_c",
                         "Referer" to "https://allmanga.to"
                 )
     }

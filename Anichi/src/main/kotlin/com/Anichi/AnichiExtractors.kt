@@ -51,14 +51,29 @@ object AnichiExtractors : Anichi() {
     ) = coroutineScope {
         val fullApiUrl = """$apiUrl?variables={"showId":"$hash","translationType":"$dubStatus","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$serverHash"}}"""
 
-        val apiResponse = try {
-            app.get(fullApiUrl, headers = headers).parsed<LinksQuery>()
+        val responseText = try {
+            app.get(fullApiUrl, headers = headers).text
         } catch (e: Exception) {
             e.printStackTrace()
             return@coroutineScope
         }
 
-        val sources = apiResponse.data?.episode?.sourceUrls ?: return@coroutineScope
+        val sources = try {
+            val encrypted = tryParseJson<EncryptedResponse>(responseText)
+                ?.data
+                ?.tobeparsed
+
+            val finalJson = encrypted
+                ?.let { decodeToBeParsed(it) }
+                ?: responseText
+
+            tryParseJson<LinksQuery>(finalJson)?.let {
+                it.data?.episode?.sourceUrls ?: it.episode?.sourceUrls
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        } ?: return@coroutineScope
 
         sources.forEach { source ->
             launch {

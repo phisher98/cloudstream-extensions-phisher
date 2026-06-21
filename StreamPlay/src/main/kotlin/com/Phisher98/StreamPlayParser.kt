@@ -2,8 +2,21 @@ package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
 
 //Anichi
+
+
+@Serializable
+data class EncryptedResponse(
+    val data: EncryptedData? = null
+)
+
+@Serializable
+data class EncryptedData(
+    val _m: String? = null,
+    val tobeparsed: String? = null
+)
 
 data class AnichiRoot(
     val data: AnichiData,
@@ -33,26 +46,27 @@ data class Edge(
 //Anichi Ep Parser
 
 data class AnichiEP(
-    val data: AnichiEPData,
+    val data: AnichiEPData? = null,
+    val episode: AnichiEpisode? = null,
 )
 
 data class AnichiEPData(
-    val episode: AnichiEpisode,
+    val episode: AnichiEpisode? = null,
 )
 
 data class AnichiEpisode(
-    val sourceUrls: List<SourceUrl>,
+    val sourceUrls: List<SourceUrl> = emptyList(),
 )
 
 data class SourceUrl(
     val sourceUrl: String,
     val sourceName: String,
-    val downloads: AnichiDownloads?,
+    val downloads: AnichiDownloads? = null,
 )
 
 data class AnichiDownloads(
-    val sourceName: String,
-    val downloadUrl: String,
+    val sourceName: String? = null,
+    val downloadUrl: String? = null,
 )
 
 data class AniIds(var id: Int? = null, var idMal: Int? = null)
