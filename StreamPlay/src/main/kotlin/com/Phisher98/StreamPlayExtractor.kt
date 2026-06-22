@@ -1626,6 +1626,7 @@ object StreamPlayExtractor : StreamPlay() {
                         "Sec-Fetch-Mode" to "cors",
                         "Sec-Fetch-Site" to "cross-site"
                     )
+                    val baseurl = getBaseUrl(server.src)
 
                     callback.invoke(
                         newExtractorLink(
@@ -1641,7 +1642,15 @@ object StreamPlayExtractor : StreamPlay() {
                     )
 
                     decrypted.subtitles.forEach { subtitle ->
-                        subtitleCallback(newSubtitleFile(subtitle.name, httpsify(subtitle.src)))
+                        subtitleCallback(
+                            newSubtitleFile(
+                                subtitle.name,
+                                httpsify(subtitle.src)
+                            )
+                            {
+                                this.headers = mapOf("Referer" to baseurl)
+                            }
+                        )
                     }
                 } else if (server.name.contains("CatStream")) {
                     val baseurl = getBaseUrl(server.src)
@@ -1689,6 +1698,9 @@ object StreamPlayExtractor : StreamPlay() {
                                     name,  // Use label for the name
                                     httpsify(src)    // Use extracted URL
                                 )
+                                {
+                                    this.headers = mapOf("Referer" to baseurl)
+                                }
                             )
                         }
 

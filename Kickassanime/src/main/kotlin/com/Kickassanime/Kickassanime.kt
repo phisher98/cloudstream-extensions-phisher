@@ -290,6 +290,9 @@ val json = """
                                 name,  // Use label for the name
                                 src    // Use extracted URL
                             )
+                            {
+                                this.headers = mapOf("Referer" to baseurl)
+                            }
                         )
                     }
 
@@ -342,6 +345,9 @@ val json = """
                                     name,  // Use label for the name
                                     src    // Use extracted URL
                                 )
+                                {
+                                    this.headers = mapOf("Referer" to baseurl)
+                                }
                             )
                         }
 
