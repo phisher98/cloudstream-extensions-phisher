@@ -52,12 +52,79 @@ class CloudPlay : MainAPI() {
         val decryptedJson = decryptPayload(res.payload, res.iv)
         val streams = parseJson<CloudPlayStreams>(decryptedJson).streams
 
-        val homePageLists = streams.amap { stream ->
-            val shows = fetchChannels(stream.url, stream.logo)
-            HomePageList(stream.name ?: "Unknown", shows, isHorizontalImages = true)
+        val homePageLists = mutableListOf<HomePageList>()
+        streams.amap { stream ->
+            val sections = fetchHomeSections(stream.name ?: "Unknown", stream.url, stream.logo)
+            homePageLists.addAll(sections)
         }
 
         return newHomePageResponse(homePageLists)
+    }
+
+    /**
+     * Fetches a URL and returns one or more HomePageLists.
+     * If the URL contains sub-streams (nested CloudPlayStream list), each sub-stream
+     * becomes its own separate HomePageList instead of being merged into a single one.
+     * If the URL returns direct channels (JSON list or M3U), a single HomePageList is returned.
+     */
+    private suspend fun fetchHomeSections(
+        sectionName: String,
+        url: String,
+        fallbackLogo: String?
+    ): List<HomePageList> {
+        val isHost = url.contains(base64Decode("aG9zdC5jbG91ZHBsYXkubWU="))
+        val headers = if (isHost) apiHeaders else emptyMap()
+
+        val resText = app.get(url, headers = headers).text
+        if (resText.isBlank()) return emptyList()
+
+        // M3U playlist — direct channels, single section
+        if (resText.startsWith("#EXTM3U")) {
+            val channels = parseM3u(resText).map { channel ->
+                val channelName = channel.name ?: "Unknown"
+                val posterUrl = channel.logo?.takeIf { it.isNotEmpty() } ?: fallbackLogo ?: ""
+                newLiveSearchResponse(channelName, channel.toJson(), TvType.Live) {
+                    this.posterUrl = posterUrl
+                }
+            }
+            return if (channels.isNotEmpty())
+                listOf(HomePageList(sectionName, channels, isHorizontalImages = true))
+            else emptyList()
+        }
+
+        // Try direct channel list (JSON array with m3u8_url / mpd_url)
+        try {
+            val channels = parseJson<List<CloudPlayChannel>>(resText)
+            if (channels.isNotEmpty() && (channels[0].m3u8_url != null || channels[0].mpd_url != null)) {
+                val shows = channels.map { channel ->
+                    val channelName = channel.name ?: "Unknown"
+                    val posterUrl = channel.logo ?: fallbackLogo ?: ""
+                    newLiveSearchResponse(channelName, channel.toJson(), TvType.Live) {
+                        this.posterUrl = posterUrl
+                    }
+                }
+                return listOf(HomePageList(sectionName, shows, isHorizontalImages = true))
+            }
+        } catch (_: Exception) {}
+
+        // Try sub-stream list — each sub-stream gets its OWN separate HomePageList
+        try {
+            val subStreams = parseJson<List<CloudPlayStream>>(resText)
+            if (subStreams.isNotEmpty()) {
+                val sections = mutableListOf<HomePageList>()
+                subStreams.amap { subStream ->
+                    val subSections = fetchHomeSections(
+                        subStream.name ?: sectionName,
+                        subStream.url,
+                        subStream.logo ?: fallbackLogo
+                    )
+                    sections.addAll(subSections)
+                }
+                return sections
+            }
+        } catch (_: Exception) {}
+
+        return emptyList()
     }
 
     private suspend fun fetchChannels(url: String, fallbackLogo: String?): List<SearchResponse> {
