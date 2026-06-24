@@ -27,7 +27,8 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.security.MessageDigest
 import java.util.UUID
 import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
+import javax.crypto.Mac
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 class CloudPlay : MainAPI() {
@@ -44,12 +45,26 @@ class CloudPlay : MainAPI() {
         "X-Package" to base64Decode("Y29tLmNsb3VkcGxheS5hcHA=")
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val req = app.get("$mainUrl/app.php", headers = apiHeaders)
-        val res = req.parsedSafe<CloudPlayResponse>()
-            ?: throw Error("Failed to parse app.php. Text: ${req.text}")
+    private fun generateSign(ts: Long): String {
+        val key = base64Decode("amlvdHZwbHVz")
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(key.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        return mac.doFinal(ts.toString().toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+    }
 
-        val decryptedJson = decryptPayload(res.payload, res.iv)
+    private fun mainPhpUrl(): String {
+        val ts = System.currentTimeMillis() / 1000L
+        val sign = generateSign(ts)
+        return "$mainUrl/main.php?ts=$ts&sign=$sign"
+    }
+
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val req = app.get(mainPhpUrl(), headers = apiHeaders)
+        val res = req.parsedSafe<CloudPlayResponse>()
+            ?: throw Error("Failed to parse main.php. Text: ${req.text}")
+
+        val decryptedJson = decryptPayload(res.payload, res.iv, res.tag ?: "")
         val streams = parseJson<CloudPlayStreams>(decryptedJson).streams
 
         val homePageLists = mutableListOf<HomePageList>()
@@ -61,12 +76,7 @@ class CloudPlay : MainAPI() {
         return newHomePageResponse(homePageLists)
     }
 
-    /**
-     * Fetches a URL and returns one or more HomePageLists.
-     * If the URL contains sub-streams (nested CloudPlayStream list), each sub-stream
-     * becomes its own separate HomePageList instead of being merged into a single one.
-     * If the URL returns direct channels (JSON list or M3U), a single HomePageList is returned.
-     */
+
     private suspend fun fetchHomeSections(
         sectionName: String,
         url: String,
@@ -250,10 +260,10 @@ class CloudPlay : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val res = app.get("$mainUrl/app.php", headers = apiHeaders).parsedSafe<CloudPlayResponse>()
-            ?: return emptyList()
+        val res = app.get(mainPhpUrl(), headers = apiHeaders)
+            .parsedSafe<CloudPlayResponse>() ?: return emptyList()
 
-        val decryptedJson = decryptPayload(res.payload, res.iv)
+        val decryptedJson = decryptPayload(res.payload, res.iv, res.tag ?: "")
         val streams = parseJson<CloudPlayStreams>(decryptedJson).streams
 
         val allChannels = streams.amap { stream ->
@@ -380,26 +390,30 @@ class CloudPlay : MainAPI() {
         return true
     }
 
-    private fun decryptPayload(payloadBase64: String, ivBase64: String): String {
-        val SECRET = base64Decode("YmFja3VwLXVwZGF0ZS0zLjM=")
-        val PACKAGE = base64Decode("Y29tLmNsb3VkcGxheS5hcHA=")
-        
+    private fun decryptPayload(payloadBase64: String, ivBase64: String, tagBase64: String): String {
+        val kString = base64Decode("amlvdHZwbHVz") // jiotvplus
         val digest = MessageDigest.getInstance("SHA-256")
-        val keyHash = digest.digest((SECRET + PACKAGE).toByteArray(Charsets.UTF_8))
-        
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        val secretKeySpec = SecretKeySpec(keyHash, "AES")
-        val ivParameterSpec = IvParameterSpec(base64DecodeArray(ivBase64))
-        
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec)
-        
-        val decrypted = cipher.doFinal(base64DecodeArray(payloadBase64))
+        val keyHash = digest.digest(kString.toByteArray(Charsets.UTF_8))
+
+        val ivBytes = base64DecodeArray(ivBase64)
+
+        // AES-GCM: doFinal expects ciphertext || tag concatenated
+        val cipherBytes = base64DecodeArray(payloadBase64)
+        val tagBytes = if (tagBase64.isNotEmpty()) base64DecodeArray(tagBase64) else byteArrayOf()
+        val cipherWithTag = cipherBytes + tagBytes
+
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyHash, "AES"), GCMParameterSpec(128, ivBytes))
+
+        val decrypted = cipher.doFinal(cipherWithTag)
         return String(decrypted, Charsets.UTF_8)
     }
 
     data class CloudPlayResponse(
         val payload: String,
         val iv: String,
+        val tag: String?,
+        val ts: Long?,
         val expires: Long?
     )
 
