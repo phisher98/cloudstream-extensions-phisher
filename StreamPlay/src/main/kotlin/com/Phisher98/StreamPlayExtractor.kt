@@ -4486,7 +4486,10 @@ object StreamPlayExtractor : StreamPlay() {
                         ?.takeIf { it.isNotBlank() }
                         ?.let { href ->
                             val baseurl=href.substringBefore("/?id=")
-                            val rawId = href.substringAfter("id=")
+                            val rawId = URLDecoder.decode(
+                            href.substringAfter("id="),
+                            "UTF-8"
+                            )
                             hindmoviezsignHShare(rawId, baseurl)
                         }
                         ?: return@safeAmap
@@ -4512,7 +4515,10 @@ object StreamPlayExtractor : StreamPlay() {
                         ?.takeIf { it.isNotBlank() }
                         ?.let { href ->
                             val baseurl = href.substringBefore("/?id=")
-                            val rawId = href.substringAfter("id=")
+                            val rawId = URLDecoder.decode(
+                                href.substringAfter("id="),
+                                "UTF-8"
+                            )
                             hindmoviezsignHShare(rawId, baseurl)
                         }
                         ?: return@safeAmap

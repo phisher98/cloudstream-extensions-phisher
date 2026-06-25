@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.utils.Qualities
 import org.json.JSONObject
-import java.net.URLEncoder
 import java.text.Normalizer
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -287,12 +286,6 @@ fun getIndexQuality(str: String?): Int {
 
 val SECRET = base64Decode("NWU5NjA4NWM1NmUwZjU0ZWRhNjU3NzkwYWM1OGQxOWIyNzE0NzljNTA0MzY3ZmM5ZTZhNmMzM2YxZjgyNGU2Yg==")
 
-fun base64Url(input: String): String {
-    return base64Encode(input.toByteArray())
-        .replace("+", "-")
-        .replace("/", "_")
-        .replace("=", "")
-}
 
 fun hmacSha256(key: String, data: String): String {
     val mac = Mac.getInstance("HmacSHA256")
@@ -305,7 +298,7 @@ fun hmacSha256(key: String, data: String): String {
 
 fun signHShare(rawId: String, domain: String): String {
     val t = System.currentTimeMillis() / 1000
-    val encoded = base64Url(rawId)
+    val encoded = base64Encode(rawId.toByteArray()).replace("/=+$/", "")
     val s = hmacSha256(SECRET, "$encoded|$t")
-    return "$domain/r.php?d=${URLEncoder.encode(encoded, "UTF-8")}&t=$t&s=$s"
+    return "$domain/r.php?d=$encoded&t=$t&s=$s"
 }

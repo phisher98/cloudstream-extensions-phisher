@@ -32,6 +32,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.jsoup.nodes.Element
+import java.net.URLDecoder
 
 
 class Hindmoviez : MainAPI() {
@@ -203,7 +204,10 @@ class Hindmoviez : MainAPI() {
                         val href = anchor.absUrl("href")
                         if (href.isBlank()) return@mapNotNull null
                         val baseurl=href.substringBefore("/?id=")
-                        val rawId = href.substringAfter("id=")
+                        val rawId = URLDecoder.decode(
+                            href.substringAfter("id="),
+                            "UTF-8"
+                        )
                         signHShare(rawId,baseurl)
                     }
             }
@@ -260,7 +264,10 @@ class Hindmoviez : MainAPI() {
                         .takeIf { it.isNotBlank() } ?: return@episodeLoop
 
                     val baseurl=href.substringBefore("/?id=")
-                    val rawId = href.substringAfter("id=")
+                    val rawId = URLDecoder.decode(
+                        href.substringAfter("id="),
+                        "UTF-8"
+                    )
 
                     val epUrl = signHShare(rawId, baseurl)
                         .takeIf { it.isNotBlank() }
