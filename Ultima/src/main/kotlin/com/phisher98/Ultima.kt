@@ -3,7 +3,6 @@ package com.phisher98
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
@@ -11,13 +10,14 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageData
 import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.MovieSearchResponse
 import com.lagradost.cloudstream3.SearchResponse
-import com.lagradost.cloudstream3.TvSeriesSearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.phisher98.UltimaUtils.SectionInfo
 
@@ -149,47 +149,43 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     }
 
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val enabledSections = mainPage
-            .filter { !it.name.equals("watch_sync", ignoreCase = true) }
-            .mapNotNull {
+    override suspend fun search(query: String, page: Int): SearchResponseList {
+        val enabledPluginNames = sm.currentExtensions
+            .flatMap { it.sections?.asList() ?: emptyList() }
+            .filter { it.enabled }
+            .map { it.pluginName }
+            .distinct()
+
+        if (enabledPluginNames.isEmpty()) return emptyList<SearchResponse>().toNewSearchResponseList()
+
+        val allProviders = UltimaUtils.getAllProviders()
+
+        val tasks = enabledPluginNames.mapNotNull { pluginName ->
+            val provider = allProviders.find { it.name == pluginName } ?: return@mapNotNull null
+            suspend {
                 try {
-                    val section = AppUtils.parseJson<SectionInfo>(it.data)
-                    section.pluginName to section
-                } catch (_: Exception) {
-                    null
-                }
-            }
+                    val items = provider.search(query, 1)?.items
+                        ?: provider.search(query).orEmpty()
 
-        val tasks = mutableListOf<suspend () -> List<SearchResponse>>()
-
-        for ((pluginName, _) in enabledSections) {
-            val provider = UltimaUtils.getAllProviders().find { it.name == pluginName } ?: continue
-
-            tasks += suspend {
-                try {
-                    when (val result = provider.search(query)) {
-                        is List<*> -> {
-                            result.map { item ->
-                                when (item) {
-                                    is MovieSearchResponse -> item.copy(name = "[$pluginName] ${item.name}")
-                                    is AnimeSearchResponse -> item.copy(name = "[$pluginName] ${item.name}")
-                                    is TvSeriesSearchResponse -> item.copy(name = "[$pluginName] ${item.name}")
-                                    else -> item
-                                }
-                            }
+                    items.map { item ->
+                        newMovieSearchResponse(
+                            "[$pluginName] ${item.name}",
+                            item.url,
+                        ) {
+                            this.posterUrl = item.posterUrl
+                            this.posterHeaders = item.posterHeaders
+                            this.quality = item.quality
+                            this.id = item.id
                         }
-                        else -> emptyList()
                     }
                 } catch (e: Exception) {
-                    Log.e("search", "Search failed for provider $pluginName: ${e.message}")
-                    emptyList()
+                    Log.e("Ultima", "Search failed for '$pluginName': ${e.message}")
+                    emptyList<SearchResponse>()
                 }
             }
         }
 
-
-        return runLimitedParallel(limit = 4, tasks).flatten()
+        return runLimitedParallel(limit = 4, tasks).flatten().toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
