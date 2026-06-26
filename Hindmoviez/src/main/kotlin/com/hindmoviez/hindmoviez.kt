@@ -205,7 +205,7 @@ class Hindmoviez : MainAPI() {
                         if (href.isBlank()) return@mapNotNull null
                         val baseurl=href.substringBefore("/?id=")
                         val rawId = URLDecoder.decode(
-                            href.substringAfter("id="),
+                            href.substringAfter("id=").replace("+", "%2B"),
                             "UTF-8"
                         )
                         signHShare(rawId,baseurl)
@@ -265,7 +265,7 @@ class Hindmoviez : MainAPI() {
 
                     val baseurl=href.substringBefore("/?id=")
                     val rawId = URLDecoder.decode(
-                        href.substringAfter("id="),
+                        href.substringAfter("id=").replace("+", "%2B"),
                         "UTF-8"
                     )
 
@@ -364,9 +364,9 @@ class Hindmoviez : MainAPI() {
         }.flatten()
 
         allRequests.amap { (btnUrl, extractedSpecs, fileSize) ->
-            if (btnUrl.contains("gdshine"))
-            {
+            if (btnUrl.contains("gdshine")) {
                 loadExtractor(btnUrl,"$extractedSpecs[$fileSize]",subtitleCallback,callback)
+                return@amap
             }
             try {
                 val doc = app.get(btnUrl, timeout = 10000L).document

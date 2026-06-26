@@ -123,10 +123,6 @@ suspend fun bypassHrefli(url: String): String? {
 }
 
 
-suspend fun String.haveDub(referer: String): Boolean {
-    return app.get(this, referer = referer).text.contains("TYPE=AUDIO")
-}
-
 suspend fun convertTmdbToAnimeId(
     title: String?,
     date: String?,
@@ -1892,6 +1888,14 @@ suspend inline fun <A, B> Iterable<A>.safeAmap(
 }
 
 val HindmoviezSECRET = base64Decode("NWU5NjA4NWM1NmUwZjU0ZWRhNjU3NzkwYWM1OGQxOWIyNzE0NzljNTA0MzY3ZmM5ZTZhNmMzM2YxZjgyNGU2Yg==")
+
+fun hindmoviezbase64Url(input: String): String {
+    return base64Encode(input.toByteArray())
+        .replace("+", "-")
+        .replace("/", "_")
+        .replace("=", "")
+}
+
 fun hindmoviezhmacSha256(key: String, data: String): String {
     val mac = Mac.getInstance("HmacSHA256")
     val secretKey = SecretKeySpec(key.toByteArray(), "HmacSHA256")
@@ -1903,9 +1907,9 @@ fun hindmoviezhmacSha256(key: String, data: String): String {
 
 fun hindmoviezsignHShare(rawId: String, domain: String): String {
     val t = System.currentTimeMillis() / 1000
-    val encoded = base64Encode(rawId.toByteArray()).replace("/=+$/", "")
+    val encoded = hindmoviezbase64Url(rawId)
     val s = hindmoviezhmacSha256(HindmoviezSECRET, "$encoded|$t")
-    return "$domain/r.php?d=$encoded&t=$t&s=$s"
+    return "$domain/r.php?d=${java.net.URLEncoder.encode(encoded, "UTF-8")}&t=$t&s=$s"
 }
 
 //Cinemacity
