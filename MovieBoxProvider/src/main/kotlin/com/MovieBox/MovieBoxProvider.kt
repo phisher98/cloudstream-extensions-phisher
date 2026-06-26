@@ -51,7 +51,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.math.max
 import java.security.SecureRandom
 
-class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
+class MovieBoxProvider(private val sharedPref: SharedPreferences? = null) : MainAPI() {
 
     companion object {
         val HOST_POOL = listOf(
@@ -62,10 +62,67 @@ class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
             "https://api3.aoneroom.com",
         )
         private const val TOKEN_B64 = "ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SjFhV1FpT2pJME1UUTFOak0yTkRneU9USTJOelEzTnpZc0ltVjRjQ0k2TVRjNU1ESTFNemc0T1N3aWFXRjBJam94TnpneU5EYzNOVGc1ZlEuUUFLR1Z4SGd6VDItQjVnRWhUT2NCREVwM0Rla0RKcmdnVFBteVViVXJ1QQ=="
+        // Hardcoded fallback; actual token is refreshed from server x-user response headers
         val BEARER_TOKEN: String get() = base64Decode(TOKEN_B64)
+
+        /** Decode the exp (expiry) Unix-seconds from a JWT without a library. */
+        fun decodeJwtExpiry(token: String): Long {
+            return try {
+                val payload = token.split(".").getOrNull(1) ?: return 0L
+                // JWT uses base64url (no padding), convert to standard base64
+                val padded = payload.replace("-", "+").replace("_", "/")
+                    .let { it + "=".repeat((4 - it.length % 4) % 4) }
+                val json = android.util.Base64.decode(padded, android.util.Base64.DEFAULT)
+                    .toString(Charsets.UTF_8)
+                org.json.JSONObject(json).getLong("exp")
+            } catch (_: Exception) { 0L }
+        }
+
+        /** True if the token is non-blank and won't expire within the next hour. */
+        fun isTokenValid(token: String?): Boolean {
+            if (token.isNullOrBlank()) return false
+            val exp = decodeJwtExpiry(token)
+            return exp > System.currentTimeMillis() / 1000 + 3600
+        }
     }
 
     override var mainUrl = sharedPref?.getString("moviebox_host", HOST_POOL[4]) ?: HOST_POOL[4]
+
+    // ── Token management ────────────────────────────────────────────────────────
+    private val PREF_TOKEN_KEY = "moviebox_bearer_token"
+
+    /**
+     * Persist a fresh JWT received from the server's x-user response header.
+     * Only saved when it is actually valid (not expired).
+     */
+    private fun saveToken(token: String?) {
+        if (token.isNullOrBlank()) return
+        if (!isTokenValid(token)) return          // don't cache an already-expired token
+        sharedPref?.edit()?.putString(PREF_TOKEN_KEY, token)?.apply()
+    }
+
+    /**
+     * Return the best available JWT:
+     *   1. A valid (non-expired) token previously cached in SharedPreferences, or
+     *   2. The hardcoded fallback token compiled into the extension.
+     */
+    private fun getCachedToken(): String {
+        val saved = sharedPref?.getString(PREF_TOKEN_KEY, null)
+        return if (isTokenValid(saved)) saved!! else BEARER_TOKEN
+    }
+
+    /**
+     * If xUserHeader is not null/blank, extract the JWT from it and persist it.
+     * Pass response.headers["x-user"] directly — no dependency on any specific Response type.
+     */
+    private fun persistTokenFromXUser(xUserHeader: String?) {
+        if (xUserHeader.isNullOrBlank()) return
+        try {
+            val token = jacksonObjectMapper().readTree(xUserHeader)["token"]?.asText() ?: return
+            saveToken(token)
+        } catch (_: Exception) {}
+    }
+
     override var name = "MovieBox"
     override val hasMainPage = true
     override var lang = "hi"
@@ -327,7 +384,7 @@ class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
             "x-tr-signature" to xTrSignature,
             "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"$deviceId","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"${randomBrandModel()}","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
             "x-client-status" to "0",
-            "Authorization" to "Bearer $BEARER_TOKEN"
+            "Authorization" to "Bearer ${getCachedToken()}"
         )
         val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
         val response = app.post(
@@ -335,6 +392,8 @@ class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
             headers = headers,
             requestBody = requestBody
         )
+        // Persist any fresh token the server returned
+        persistTokenFromXUser(response.headers["x-user"])
 
         val responseBody = response.text
         val mapper = jacksonObjectMapper()
@@ -390,10 +449,11 @@ class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
             "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"$deviceId","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"${randomBrandModel()}","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
             "x-client-status" to "0",
             "x-play-mode" to "2",
-            "Authorization" to "Bearer $BEARER_TOKEN"
+            "Authorization" to "Bearer ${getCachedToken()}"
         )
 
         val response = app.get(finalUrl, headers = headers)
+        persistTokenFromXUser(response.headers["x-user"])
         if (response.code != 200) {
             throw ErrorLoadingException("Failed to load data: ${response.text}")
         }
@@ -638,7 +698,7 @@ class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
                 "x-tr-signature" to subjectXTrSignature,
                 "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","install_ch":"ps","device_id":"$deviceId","install_store":"ps","gaid":"1b2212c1-dadf-43c3-a0c8-bd6ce48ae22d","brand":"$model","model":"$brand","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":"","X-Play-Mode":"1","X-Idle-Data":"1","X-Family-Mode":"0","X-Content-Mode":"0"}""".trimIndent(),
                 "x-client-status" to "0",
-                "Authorization" to "Bearer $BEARER_TOKEN"
+                "Authorization" to "Bearer ${getCachedToken()}"
             )
 
             val subjectResponse = app.get(subjectUrl, headers = subjectHeaders)
@@ -665,14 +725,11 @@ class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
                 }
             }
 
-            val xUserHeader = subjectResponse.headers["x-user"]
+            // Persist any fresh JWT the server sends back in x-user
+            persistTokenFromXUser(subjectResponse.headers["x-user"])
 
-            var token: String = BEARER_TOKEN
-
-            if (!xUserHeader.isNullOrBlank()) {
-                val xUserJson = mapper.readTree(xUserHeader)
-                token = xUserJson["token"]?.asText()?.takeIf { it.isNotBlank() } ?: BEARER_TOKEN
-            }
+            // Use freshest available token for all downstream link requests
+            val token: String = getCachedToken()
 
             // Always add the original subject ID first as the default source with proper language name
             subjectIds.add(0, Pair(originalSubjectId, originalLanguageName))
