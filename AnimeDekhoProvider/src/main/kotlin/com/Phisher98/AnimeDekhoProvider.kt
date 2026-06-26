@@ -8,6 +8,11 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.amap
 import org.jsoup.nodes.Element
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 
 open class AnimeDekhoProvider : MainAPI() {
     override var mainUrl = "https://animedekho.app"
@@ -26,8 +31,6 @@ open class AnimeDekhoProvider : MainAPI() {
 
     override val mainPage =
         mainPageOf(
-            "/series/" to "Series",
-            "/movie/" to "Movies",
             "/category/anime/" to "Anime",
             "/category/cartoon/" to "Cartoon",
             "/category/crunchyroll/" to "Crunchyroll",
@@ -80,6 +83,56 @@ open class AnimeDekhoProvider : MainAPI() {
         val year = (document.selectFirst("span.year")?.text()?.trim()
             ?: document.selectFirst("meta[property=og:updated_time]")?.attr("content")
                 ?.substringBefore("-"))?.toIntOrNull()
+
+        val tags = document.select("ul.details-lst li:contains(Genres) a").map { it.text() }
+        val anilistUrl = document.selectFirst("a[href*='anilist.php?id=']")?.attr("href")
+        val malUrl = document.selectFirst("a[href*='myanimelist.php?id=']")?.attr("href")
+        val tmdbId = document.select("a[href*='themoviedb.org/tv/'], a[href*='themoviedb.org/movie/']").firstOrNull()?.attr("href")?.let { href ->
+            Regex("""themoviedb\.org/(?:tv|movie)/(\d+)""").find(href)?.groupValues?.getOrNull(1)
+        }
+
+        var anilistId: Int? = null
+        var malId: Int? = null
+
+        if (anilistUrl != null) {
+            runCatching {
+                val finalUrl = app.get(anilistUrl).url
+                anilistId = Regex("""anilist\.co/anime/(\d+)""").find(finalUrl)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            }
+        }
+        if (malUrl != null) {
+            runCatching {
+                val finalUrl = app.get(malUrl).url
+                malId = Regex("""myanimelist\.net/anime/(\d+)""").find(finalUrl)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            }
+        }
+
+        var aniZipData: MetaAnimeData? = null
+        var backgroundPoster: String? = null
+        var metaPoster: String? = null
+        
+        val urlsToTry = listOfNotNull(
+            tmdbId?.let { "https://api.ani.zip/mappings?themoviedb_id=$it" },
+            anilistId?.let { "https://api.ani.zip/mappings?anilist_id=$it" },
+            malId?.let { "https://api.ani.zip/mappings?mal_id=$it" }
+        )
+
+        for (aniUrl in urlsToTry) {
+            val success = runCatching {
+                val syncMetaData = app.get(aniUrl).text
+                aniZipData = parseJson<MetaAnimeData>(syncMetaData)
+                backgroundPoster = aniZipData.images?.find { it.coverType == "Fanart" }?.url
+                metaPoster = aniZipData.images?.find { it.coverType == "Poster" }?.url
+                if (anilistId == null) anilistId = aniZipData.mappings?.anilistId
+                if (malId == null) malId = aniZipData.mappings?.malId
+                true
+            }.onFailure {
+                Log.e("AnimeDekho", "Error fetching ani.zip data for url $aniUrl")
+            }.getOrDefault(false)
+            
+            if (success) break
+        }
+
         val lst = document.select("ul.seasons-lst li")
 
         return if (lst.isEmpty()) {
@@ -87,22 +140,39 @@ open class AnimeDekhoProvider : MainAPI() {
                 media.url,
                 mediaType = 1
             ).toJson()) {
-                this.posterUrl = poster
+                this.posterUrl = metaPoster ?: poster
+                this.backgroundPosterUrl = backgroundPoster ?: poster
                 this.plot = plot
                 this.year = year
+                this.tags = tags
+                addMalId(malId)
+                addAniListId(anilistId)
+                addTMDbId(tmdbId)
             }
         } else {
             val episodes = document.select("ul.seasons-lst li").mapNotNull {
                 val name = it.selectFirst("h3.title")?.ownText() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
                 val poster=it.selectFirst("div > div > figure > img")?.attr("src")
-                val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
+                val epString = it.selectFirst("h3.title > span")?.text().toString()
+                val seasonnumber = epString.substringAfter("S").substringBefore("-")
                 val season=seasonnumber.toIntOrNull()
+                val epNumRegex = Regex("""E(\d+)""")
+                val epNumStr = epNumRegex.find(epString)?.groupValues?.getOrNull(1)
+                val epNum = epNumStr?.toIntOrNull()
+                
+                val meta = aniZipData?.episodes?.get(epNumStr ?: "")
+
                 newEpisode(Media(href, mediaType = 2).toJson())
                 {
-                    this.name=name
-                    this.posterUrl=poster
-                    this.season=season
+                    this.name = meta?.title?.get("en") ?: meta?.title?.get("x-jat") ?: name
+                    this.posterUrl = meta?.image ?: poster
+                    this.season = season
+                    this.episode = epNum
+                    this.description = meta?.overview
+                    meta?.airDateUtc?.let { addDate(it) }
+                    meta?.rating?.let { this.score = Score.from10(it) }
+                    this.runTime = meta?.runtime
                 }
             }
             val recommendations = document.select("div.swiper-wrapper article").map {
@@ -120,10 +190,15 @@ open class AnimeDekhoProvider : MainAPI() {
                 }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster
+                this.posterUrl = metaPoster ?: poster
+                this.backgroundPosterUrl = backgroundPoster ?: poster
                 this.plot = plot
                 this.year = year
+                this.tags = tags
                 this.recommendations = recommendations
+                addMalId(malId)
+                addAniListId(anilistId)
+                addTMDbId(tmdbId)
             }
         }
     }
@@ -194,3 +269,36 @@ open class AnimeDekhoProvider : MainAPI() {
     data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
 
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaImage(
+    @param:JsonProperty("coverType") val coverType: String?,
+    @param:JsonProperty("url") val url: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaEpisode(
+    @param:JsonProperty("episode") val episode: String?,
+    @param:JsonProperty("airDateUtc") val airDateUtc: String?,
+    @param:JsonProperty("runtime") val runtime: Int?,
+    @param:JsonProperty("image") val image: String?,
+    @param:JsonProperty("title") val title: Map<String, String>?,
+    @param:JsonProperty("overview") val overview: String?,
+    @param:JsonProperty("rating") val rating: String?,
+    @param:JsonProperty("finaleType") val finaleType: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaMappings(
+    @param:JsonProperty("mal_id") val malId: Int? = null,
+    @param:JsonProperty("anilist_id") val anilistId: Int? = null,
+    @param:JsonProperty("themoviedb_id") val themoviedbId: Int? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaAnimeData(
+    @param:JsonProperty("titles") val titles: Map<String, String>?,
+    @param:JsonProperty("images") val images: List<MetaImage>?,
+    @param:JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?,
+    @param:JsonProperty("mappings") val mappings: MetaMappings? = null
+)
