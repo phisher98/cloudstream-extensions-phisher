@@ -1,5 +1,6 @@
 package com.MovieBox
 
+import android.content.SharedPreferences
 import android.annotation.SuppressLint
 import android.net.Uri
 import com.fasterxml.jackson.databind.JsonNode
@@ -50,8 +51,21 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.math.max
 import java.security.SecureRandom
 
-class MovieBoxProvider : MainAPI() {
-    override var mainUrl = "https://api3.aoneroom.com"
+class MovieBoxProvider(sharedPref: SharedPreferences? = null) : MainAPI() {
+
+    companion object {
+        val HOST_POOL = listOf(
+            "https://api6.aoneroom.com",
+            "https://api5.aoneroom.com",
+            "https://api4.aoneroom.com",
+            "https://api4sg.aoneroom.com",
+            "https://api3.aoneroom.com",
+        )
+        private const val TOKEN_B64 = "ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SjFhV1FpT2pJME1UUTFOak0yTkRneU9USTJOelEzTnpZc0ltVjRjQ0k2TVRjNU1ESTFNemc0T1N3aWFXRjBJam94TnpneU5EYzNOVGc1ZlEuUUFLR1Z4SGd6VDItQjVnRWhUT2NCREVwM0Rla0RKcmdnVFBteVViVXJ1QQ=="
+        val BEARER_TOKEN: String get() = base64Decode(TOKEN_B64)
+    }
+
+    override var mainUrl = sharedPref?.getString("moviebox_host", HOST_POOL[4]) ?: HOST_POOL[4]
     override var name = "MovieBox"
     override val hasMainPage = true
     override var lang = "hi"
@@ -312,7 +326,8 @@ class MovieBoxProvider : MainAPI() {
             "x-client-token" to xClientToken,
             "x-tr-signature" to xTrSignature,
             "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"$deviceId","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"${randomBrandModel()}","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
-            "x-client-status" to "0"
+            "x-client-status" to "0",
+            "Authorization" to "Bearer $BEARER_TOKEN"
         )
         val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
         val response = app.post(
@@ -374,7 +389,8 @@ class MovieBoxProvider : MainAPI() {
             "x-tr-signature" to xTrSignature,
             "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"$deviceId","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"${randomBrandModel()}","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
             "x-client-status" to "0",
-            "x-play-mode" to "2"
+            "x-play-mode" to "2",
+            "Authorization" to "Bearer $BEARER_TOKEN"
         )
 
         val response = app.get(finalUrl, headers = headers)
@@ -621,7 +637,8 @@ class MovieBoxProvider : MainAPI() {
                 "x-client-token" to subjectXClientToken,
                 "x-tr-signature" to subjectXTrSignature,
                 "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","install_ch":"ps","device_id":"$deviceId","install_store":"ps","gaid":"1b2212c1-dadf-43c3-a0c8-bd6ce48ae22d","brand":"$model","model":"$brand","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":"","X-Play-Mode":"1","X-Idle-Data":"1","X-Family-Mode":"0","X-Content-Mode":"0"}""".trimIndent(),
-                "x-client-status" to "0"
+                "x-client-status" to "0",
+                "Authorization" to "Bearer $BEARER_TOKEN"
             )
 
             val subjectResponse = app.get(subjectUrl, headers = subjectHeaders)
@@ -650,11 +667,11 @@ class MovieBoxProvider : MainAPI() {
 
             val xUserHeader = subjectResponse.headers["x-user"]
 
-            var token: String? = null
+            var token: String = BEARER_TOKEN
 
             if (!xUserHeader.isNullOrBlank()) {
                 val xUserJson = mapper.readTree(xUserHeader)
-                token = xUserJson["token"]?.asText()
+                token = xUserJson["token"]?.asText()?.takeIf { it.isNotBlank() } ?: BEARER_TOKEN
             }
 
             // Always add the original subject ID first as the default source with proper language name

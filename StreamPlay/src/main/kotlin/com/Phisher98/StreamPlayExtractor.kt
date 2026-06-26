@@ -3659,6 +3659,8 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     val deviceId = generateDeviceId()
+    private val MOVIEBOX_TOKEN_B64 = "ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SjFhV1FpT2pJME1UUTFOak0yTkRneU9USTJOelEzTnpZc0ltVjRjQ0k2TVRjNU1ESTFNemc0T1N3aWFXRjBJam94TnpneU5EYzNOVGc1ZlEuUUFLR1Z4SGd6VDItQjVnRWhUT2NCREVwM0Rla0RKcmdnVFBteVViVXJ1QQ=="
+    private val MOVIEBOX_BEARER_TOKEN: String get() = base64Decode(MOVIEBOX_TOKEN_B64)
     suspend fun invokeMovieBox(
         title: String?,
         season: Int? = 0,
@@ -3682,7 +3684,8 @@ object StreamPlayExtractor : StreamPlay() {
                 "x-client-token" to xClientToken,
                 "x-tr-signature" to xTrSignature,
                 "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","install_ch":"ps","device_id":"$deviceId","install_store":"ps","gaid":"1b2212c1-dadf-43c3-a0c8-bd6ce48ae22d","brand":"Windows","model":"Subsystem for Android(TM)","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":"","X-Play-Mode":"1","X-Idle-Data":"1","X-Family-Mode":"0","X-Content-Mode":"0"}""".trimIndent(),
-                "x-client-status" to "0"
+                "x-client-status" to "0",
+                "Authorization" to "Bearer $MOVIEBOX_BEARER_TOKEN"
             )
 
             val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
@@ -3721,17 +3724,19 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                     val subjectHeaders = headers + mapOf(
                         "x-client-token" to subjectXToken,
-                        "x-tr-signature" to subjectXSign
+                        "x-tr-signature" to subjectXSign,
+                        "Authorization" to "Bearer $MOVIEBOX_BEARER_TOKEN"
                     )
                     val subjectRes = safeGet(subjectUrl, headers = subjectHeaders)
 
                     val xUserHeader = subjectRes.headers["x-user"]
 
-                    var authtoken: String? = null
+                    // Use x-user token if present, otherwise fall back to MOVIEBOX_BEARER_TOKEN
+                    var authtoken: String = MOVIEBOX_BEARER_TOKEN
 
                     if (!xUserHeader.isNullOrBlank()) {
                         val xUserJson = mapper.readTree(xUserHeader)
-                        authtoken = xUserJson["token"]?.asText()
+                        authtoken = xUserJson["token"]?.asText()?.takeIf { it.isNotBlank() } ?: MOVIEBOX_BEARER_TOKEN
                     }
 
                     if (subjectRes.code != 200) return@safeAmap
@@ -3768,7 +3773,11 @@ object StreamPlayExtractor : StreamPlay() {
                             "application/json",
                             playUrl
                         )
-                        val playHeaders = headers + mapOf("x-client-token" to token, "x-tr-signature" to sign)
+                        val playHeaders = headers + mapOf(
+                            "x-client-token" to token,
+                            "x-tr-signature" to sign,
+                            "Authorization" to "Bearer $authtoken"
+                        )
 
                         val playRes = safeGet(playUrl, headers = playHeaders)
                         if (playRes.code != 200) continue
@@ -3892,7 +3901,8 @@ object StreamPlayExtractor : StreamPlay() {
                                     "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","sp_code":""}""",
                                     "X-Client-Status" to "0",
                                     "x-client-token" to subToken,
-                                    "x-tr-signature" to subSign
+                                    "x-tr-signature" to subSign,
+                                    "Authorization" to "Bearer $authtoken"
                                 )
 
                                 val subRes = safeGet(subLink, headers = subHeaders)
