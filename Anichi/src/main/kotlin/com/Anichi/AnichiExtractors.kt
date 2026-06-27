@@ -33,7 +33,15 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import androidx.appcompat.app.AppCompatActivity
+import com.lagradost.cloudstream3.CommonActivity
+import com.lagradost.cloudstream3.app
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import javax.crypto.Cipher
@@ -41,6 +49,29 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 object AnichiExtractors : Anichi() {
+
+    suspend fun showTurnstileDialogAndWait(url: String): String? =
+        withContext(Dispatchers.Main) {
+            suspendCancellableCoroutine { cont ->
+                val activity = CommonActivity.activity as? AppCompatActivity
+                if (activity == null || activity.isFinishing || activity.isDestroyed) {
+                    cont.resume(null)
+                    return@suspendCancellableCoroutine
+                }
+                var resumed = false
+                fun safeResume(token: String?) {
+                    if (!resumed) { resumed = true; cont.resume(token) }
+                }
+                val dialog = AnichiTurnstileDialog(
+                    targetUrl = url,
+                    onFinished = { token -> safeResume(token) }
+                )
+                cont.invokeOnCancellation {
+                    activity.runOnUiThread { runCatching { dialog.dismissAllowingStateLoss() } }
+                }
+                dialog.show(activity.supportFragmentManager, "anichi_turnstile")
+            }
+        }
 
     suspend fun invokeInternalSources(
         hash: String,
@@ -52,7 +83,46 @@ object AnichiExtractors : Anichi() {
         val fullApiUrl = """$apiUrl?variables={"showId":"$hash","translationType":"$dubStatus","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$serverHash"}}"""
 
         val responseText = try {
-            app.get(fullApiUrl, headers = headers).text
+            val response = app.get(fullApiUrl, headers = headers)
+            if (response.code == 403 || response.code == 503 || !response.text.trim().startsWith("{")) {
+                Log.d("Anichi", "Cloudflare block detected on GET. Triggering Turnstile Dialog...")
+                val token = showTurnstileDialogAndWait("https://allmanga.to/")
+                if (token != null) {
+                    val postBody = """
+                        {
+                          "query": "                query(\n                  ${'$'}showId: String!\n                  ${'$'}translationType: VaildTranslationTypeEnumType!\n                  ${'$'}episodeString: String!\n                  ${'$'}search: SearchInput\n                ) {\n                  episode(\n                    showId: ${'$'}showId\n                    translationType: ${'$'}translationType\n                    episodeString: ${'$'}episodeString\n                    search: ${'$'}search\n                  ) {\n                    episodeString\n                    uploadDate\n                    sourceUrls\n                    thumbnail\n                    notes\n                    versionFix\n                    show{\n                      _id\n                        name\n                        englishName\n                        nativeName\n                        airedEnd\n                        thumbnail\n                        airedStart \n                        availableEpisodes\n                                    lastEpisodeInfo\n            lastEpisodeDate\n            type\n            season\n            score\n            episodeDuration\n            disqusIds\n            episodeCount\n\ndescription\nthumbnails\nstatus\naltNames\naverageScore\nrating\nbroadcastInterval\nbanner\nstudios\navailableEpisodesDetail\nnameOnlyString\ngenres\ntags\ncountryOfOrigin\ncharacterCount\nmalId\naniListId\nfranchiseKey\nfranchiseName\n                    }\n                    pageStatus{\n                         _id\nnotes\npageId\nshowId\n    views\n    likesCount\n    commentCount\n    dislikesCount\n    reviewCount\n    userScoreCount\n    userScoreTotalValue\n    userScoreAverValue\n     viewers{\n        firstViewers{\n          viewCount\n          lastWatchedDate\n          user{\n            _id\ndisplayName\npicture\nhideMe\nbrief\ncreatedAt\nbadges\nreputation\n\n          }\n          \n        }\n      recViewers{\n        viewCount\n          lastWatchedDate\n          user{\n            _id\ndisplayName\npicture\nhideMe\nbrief\ncreatedAt\nbadges\nreputation\n\n          }\n          \n       }\n    }\n    \n                    }\n                    \n                  }\n                }\n              ",
+                          "variables": {
+                            "showId": "$hash",
+                            "translationType": "$dubStatus",
+                            "episodeString": "$episode",
+                            "search": {
+                              "allowAdult": false,
+                              "allowUnknown": false
+                            }
+                          },
+                          "extensions": {
+                            "persistedQuery": {
+                              "version": 1,
+                              "sha256Hash": "$serverHash"
+                            },
+                            "captcha": {
+                              "token": "$token",
+                              "provider": "turnstile"
+                            }
+                          }
+                        }
+                    """.trimIndent()
+                    val mediaType = "application/json; charset=utf-8".toMediaTypeOrNull()
+                    val reqBody = postBody.toRequestBody(mediaType)
+                    val postHeaders = headers + mapOf("Content-Type" to "application/json")
+                    Log.d("Anichi", "Sending POST request with Turnstile token")
+                    app.post(apiUrl, headers = postHeaders, requestBody = reqBody).text
+                } else {
+                    response.text
+                }
+            } else {
+                response.text
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             return@coroutineScope

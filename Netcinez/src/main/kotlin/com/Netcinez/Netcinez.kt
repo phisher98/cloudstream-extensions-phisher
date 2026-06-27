@@ -113,8 +113,8 @@ class Netcinez : MainAPI() {
             }
         }
         val year = document.select("#dato-1 > div:nth-child(5)").text().toIntOrNull()
-            if (type == TvType.TvSeries) {
-                val episodes = mutableListOf<Episode>()
+        if (type == TvType.TvSeries) {
+            val episodes = mutableListOf<Episode>()
                 document.select("div.post #cssmenu > ul li > ul > li").map {
                     val seasonno = it.select("a > span.datex").text().substringBefore("-").trim()
                         .toIntOrNull()

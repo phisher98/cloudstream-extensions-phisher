@@ -78,5 +78,47 @@
 
         </LinearLayout>
 
+        <ImageView
+            android:src="@android:drawable/divider_horizontal_dark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scaleType="fitXY"
+            android:paddingLeft="2dp"
+            android:paddingRight="2dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="10dp" />
+
+        <!-- Cloudflare Bypass Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="6dp"
+                android:text="Cloudflare Protection"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="10dp"
+                android:textSize="13sp"
+                android:text="If AnimePahe shows a &#34;Just a moment&#34; screen, tap below to open a WebView and solve the challenge. Cookies will be saved automatically." />
+
+            <Button
+                android:id="@+id/cf_bypass_btn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🛡️ Bypass Cloudflare"
+                android:textSize="14sp"
+                android:padding="12dp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

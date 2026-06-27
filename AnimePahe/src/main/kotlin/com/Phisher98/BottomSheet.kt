@@ -1,6 +1,7 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
+
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
@@ -8,6 +9,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -19,7 +21,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class BottomFragment(private val plugin: AnimePaheProviderPlugin) : BottomSheetDialogFragment() {
 
-    @SuppressLint("UseCompatLoadingForDrawables")
+    @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -90,6 +92,27 @@ class BottomFragment(private val plugin: AnimePaheProviderPlugin) : BottomSheetD
                 serverGroup.check(newId)
             }
         }
+
+        // ---- Cloudflare bypass button ----------------------------------------
+        val bypassBtn = view.findView<Button>("cf_bypass_btn")
+        bypassBtn.setOnClickListener {
+            val serverUrl = AnimePaheProviderPlugin.currentAnimepaheServer
+            val dialog = CloudflareWebViewDialog(
+                targetUrl = serverUrl,
+                onFinished = { saved ->
+                    if (saved) bypassBtn.text = "✅ CF Cookies Saved – Refresh"
+                }
+            )
+            dialog.show(parentFragmentManager, "cf_bypass")
+        }
+        // Update button label to show current cookie status
+        val cfCookies = AnimePaheProviderPlugin.cfCookies
+        if (cfCookies.isNotBlank()) {
+            bypassBtn.text = "✅ CF Cookies Saved – Refresh"
+        } else {
+            bypassBtn.text = "🛡️ Bypass Cloudflare"
+        }
+        // -----------------------------------------------------------------------
 
         return view
     }

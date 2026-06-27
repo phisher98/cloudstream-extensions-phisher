@@ -2809,10 +2809,8 @@ object StreamPlayExtractor : StreamPlay() {
 
             val serverResponse = safeGet(jsonfile, headers = headers, referer = "$allmovielandAPI/")
             if (serverResponse.code != 200) return@runCatching
-            val serverJson = serverResponse.text.replace(Regex(""",\s*/"""), "")
-            val cleanedJson = serverJson.replace(Regex(",\\s*\\[\\s*]"), "")
 
-            val servers = tryParseJson<ArrayList<AllMovielandServer>>(cleanedJson)?.let { list ->
+            val servers = serverResponse.parsedSafe<ArrayList<AllMovielandServer>>()?.let { list ->
                 if (season == null) {
                     list.mapNotNull { it.file?.let { file -> file to it.title.orEmpty() } }
                 } else {

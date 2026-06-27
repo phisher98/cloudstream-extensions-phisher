@@ -92,11 +92,11 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
             headers = mapOf(
                 "X-CSRF-TOKEN" to tokenKey,
             ),
-        ).text.replace(Regex("(,)\\s*\\[]"), "")
+        ).parsedSafe<List<Extract>>() ?: emptyList()
         return StreamPayload(
             playerDomain = playerDomain,
             tokenKey = tokenKey,
-            items = parseJson<List<Extract>>(m3u8Langs)
+            items = m3u8Langs
         )
     }
 
