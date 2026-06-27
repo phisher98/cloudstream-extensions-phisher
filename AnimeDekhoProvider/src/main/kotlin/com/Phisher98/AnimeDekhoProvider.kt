@@ -150,31 +150,76 @@ open class AnimeDekhoProvider : MainAPI() {
                 addTMDbId(tmdbId)
             }
         } else {
-            val episodes = document.select("ul.seasons-lst li").mapNotNull {
-                val name = it.selectFirst("h3.title")?.ownText() ?: "null"
-                val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-                val poster=it.selectFirst("div > div > figure > img")?.attr("src")
-                val epString = it.selectFirst("h3.title > span")?.text().toString()
-                val seasonnumber = epString.substringAfter("S").substringBefore("-")
-                val season=seasonnumber.toIntOrNull()
-                val epNumRegex = Regex("""E(\d+)""")
-                val epNumStr = epNumRegex.find(epString)?.groupValues?.getOrNull(1)
-                val epNum = epNumStr?.toIntOrNull()
-                
-                val meta = aniZipData?.episodes?.get(epNumStr ?: "")
+                val tmdbIdFinal = tmdbId ?: aniZipData?.mappings?.themoviedbId
+                val tmdbSeasonData = mutableMapOf<Int, org.json.JSONObject>()
+                val apiKey = "1865f43a0549ca50d341dd9ab8b29f49"
 
-                newEpisode(Media(href, mediaType = 2).toJson())
-                {
-                    this.name = meta?.title?.get("en") ?: meta?.title?.get("x-jat") ?: name
-                    this.posterUrl = meta?.image ?: poster
-                    this.season = season
-                    this.episode = epNum
-                    this.description = meta?.overview
-                    meta?.airDateUtc?.let { addDate(it) }
-                    meta?.rating?.let { this.score = Score.from10(it) }
-                    this.runTime = meta?.runtime
+                val episodesList = document.select("ul.seasons-lst li").mapNotNull { it }
+                val seasonsPresent = episodesList.mapNotNull { 
+                    it.selectFirst("h3.title > span")?.text()?.substringAfter("S")?.substringBefore("-")?.toIntOrNull() 
+                }.distinct()
+
+                if (tmdbIdFinal != null) {
+                    seasonsPresent.amap { s ->
+                        runCatching {
+                            val res = app.get("https://api.themoviedb.org/3/tv/$tmdbIdFinal/season/$s?api_key=$apiKey").text
+                            tmdbSeasonData[s] = org.json.JSONObject(res)
+                        }
+                    }
                 }
-            }
+
+                val episodes = episodesList.mapNotNull {
+                    val name = it.selectFirst("h3.title")?.ownText() ?: "null"
+                    val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
+                    val poster = it.selectFirst("div > div > figure > img")?.attr("src")
+                    val epString = it.selectFirst("h3.title > span")?.text().toString()
+                    val seasonnumber = epString.substringAfter("S").substringBefore("-")
+                    val season = seasonnumber.toIntOrNull()
+                    val epNumRegex = Regex("""E(\d+)""")
+                    val epNumStr = epNumRegex.find(epString)?.groupValues?.getOrNull(1)
+                    val epNum = epNumStr?.toIntOrNull()
+                    
+                    val tmdbEp = if (season != null && epNum != null) {
+                        val epsArray = tmdbSeasonData[season]?.optJSONArray("episodes")
+                        var found: org.json.JSONObject? = null
+                        if (epsArray != null) {
+                            for (i in 0 until epsArray.length()) {
+                                val ep = epsArray.getJSONObject(i)
+                                if (ep.optInt("episode_number") == epNum) {
+                                    found = ep
+                                    break
+                                }
+                            }
+                        }
+                        found
+                    } else null
+
+                    val meta = if (tmdbEp == null && (season == 1 || season == null)) aniZipData?.episodes?.get(epNumStr ?: "") else null
+
+                    newEpisode(Media(href, mediaType = 2).toJson())
+                    {
+                        this.name = tmdbEp?.optString("name")?.takeIf { it.isNotBlank() } ?: meta?.title?.get("en") ?: meta?.title?.get("x-jat") ?: name
+                        
+                        val tmdbImage = tmdbEp?.optString("still_path")?.takeIf { it.isNotBlank() && it != "null" }?.let { "https://image.tmdb.org/t/p/w500$it" }
+                        this.posterUrl = tmdbImage ?: meta?.image ?: poster
+                        
+                        this.season = season
+                        this.episode = epNum
+                        this.description = tmdbEp?.optString("overview")?.takeIf { it.isNotBlank() } ?: meta?.overview
+                        
+                        val airDate = tmdbEp?.optString("air_date")?.takeIf { it.isNotBlank() && it != "null" } ?: meta?.airDateUtc
+                        airDate?.let { addDate(it) }
+                        
+                        val vote = tmdbEp?.optDouble("vote_average")
+                        if (vote != null && vote > 0) {
+                            this.score = Score.from10(vote.toString())
+                        } else {
+                            meta?.rating?.let { this.score = Score.from10(it) }
+                        }
+                        
+                        this.runTime = tmdbEp?.optInt("runtime")?.takeIf { it > 0 } ?: meta?.runtime
+                    }
+                }
             val recommendations = document.select("div.swiper-wrapper article").map {
                 val recName = it.selectFirst("h2")?.text() ?: "Unknown"
                 val recHref = it.selectFirst("a")!!.attr("href")
@@ -185,20 +230,21 @@ open class AnimeDekhoProvider : MainAPI() {
                     mediaType = 0 // You can adjust this
                 )
                 val mediaJson = Gson().toJson(mediadata)
-                newTvSeriesSearchResponse(recName, mediaJson, TvType.TvSeries) {
+                newAnimeSearchResponse(recName, mediaJson, TvType.Anime) {
                     this.posterUrl = mediadata.poster
                 }
             }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            newAnimeLoadResponse(title, url, TvType.Anime) {
+                addEpisodes(DubStatus.Subbed, episodes)
                 this.posterUrl = metaPoster ?: poster
                 this.backgroundPosterUrl = backgroundPoster ?: poster
                 this.plot = plot
                 this.year = year
                 this.tags = tags
                 this.recommendations = recommendations
-                addMalId(malId)
-                addAniListId(anilistId)
-                addTMDbId(tmdbId)
+                malId?.let { addMalId(it) }
+                anilistId?.let { addAniListId(it) }
+                tmdbId?.let { addTMDbId(it) }
             }
         }
     }
