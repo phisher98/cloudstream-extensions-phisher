@@ -5,6 +5,7 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -81,6 +82,192 @@ class Filesdl : ExtractorApi() {
 }
 
 
+class VCloud : ExtractorApi() {
+    override val name: String = "V-Cloud"
+    override val mainUrl: String = "https://vcloud.zip"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+
+        var href = url
+
+        if (href.contains("api/index.php")) {
+            href = runCatching {
+                app.get(url).document.selectFirst("div.main h4 a")?.attr("href")
+            }.getOrNull() ?: return
+        }
+        Log.d("Phisher",href)
+        val doc = runCatching { app.get(href).document }.getOrNull() ?: return
+        val scriptTag = doc.selectFirst("script:containsData(url)")?.data() ?: ""
+
+        val urlValue =
+            Regex("""atob\(atob\('([^']+)'\)\)""")
+                .find(scriptTag)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.let { runCatching { base64Decode(base64Decode(it)) }.getOrNull() }
+                ?: Regex("""var\s+url\s*=\s*'([^']*)'""")
+                    .find(scriptTag)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    .orEmpty()
+
+        if (urlValue.isEmpty()) return
+        Log.d("Phisher",urlValue)
+
+        val document = runCatching { app.get(urlValue).document }.getOrNull() ?: return
+        val size = document.selectFirst("i#size")?.text().orEmpty()
+        val header = document.selectFirst("div.card-header")?.text().orEmpty()
+        val headerdetails = cleanTitle(header)
+
+        val labelExtras = buildString {
+            if (headerdetails.isNotEmpty()) append(headerdetails)
+            if (size.isNotEmpty()) append(" [$size]")
+        }
+
+        val div = document.selectFirst("div.card-body") ?: return
+
+        div.select("h2 a.btn").amap {
+
+            val link = it.attr("href")
+            val text = it.text()
+            val quality = getIndexQuality(header)
+            Log.d("Phisher",link)
+            Log.d("Phisher",text)
+
+            when {
+                text.contains("FSLv2", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "FSLv2",
+                            "[FSLv2] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("FSL") -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "FSL Server",
+                            "[FSL Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("BuzzServer") -> {
+                    val dlink = app.get("$link/download", referer = link, allowRedirects = false).headers["hx-redirect"] ?: ""
+                    val baseUrl = getBaseUrl(link)
+                    if (dlink.isNotEmpty()) {
+                        callback.invoke(
+                            newExtractorLink(
+                                "BuzzServer",
+                                "[BuzzServer] $labelExtras",
+                                baseUrl + dlink,
+                            ) { this.quality = quality }
+                        )
+                    } else {
+                        Log.w("Error:", "Not Found")
+                    }
+                }
+
+                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) || text.contains("PixeLServer", ignoreCase = true) -> {
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    callback(
+                        newExtractorLink(
+                            "Pixeldrain",
+                            "[Pixeldrain] $labelExtras",
+                            finalURL
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("PDL Server") -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "PDL Server",
+                            "[PDL Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                /*
+                text.contains("10Gbps", ignoreCase = true) -> {
+                    var currentLink = link
+                    var redirectUrl: String?
+
+                    while (true) {
+                        val response = app.get(currentLink, allowRedirects = false)
+                        redirectUrl = response.headers["location"]
+                        if (redirectUrl == null) {
+                            Log.e("HubCloud", "10Gbps: No redirect")
+                            return@amap
+                        }
+                        if ("link=" in redirectUrl) break
+                        currentLink = redirectUrl
+                    }
+                    val finalLink = redirectUrl.substringAfter("link=")
+                    callback.invoke(
+                        newExtractorLink(
+                            "10Gbps [Download]",
+                            "10Gbps [Download] $labelExtras",
+                            finalLink,
+                        ) { this.quality = quality }
+                    )
+                }
+                */
+
+                text.contains("S3 Server", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "S3 Server",
+                            "[S3 Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("Mega Server", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "Mega Server",
+                            "[Mega Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                else -> {
+                    loadExtractor(link, "", subtitleCallback, callback)
+                }
+            }
+        }
+    }
+
+    private fun cleanTitle(title: String): String {
+        return extractCleanTitle(title)
+    }
+
+    private fun getIndexQuality(str: String?): Int {
+        return extractIndexQuality(str)
+    }
+}
+
+fun getBaseUrl(url: String): String {
+    return URI(url).let {
+        "${it.scheme}://${it.host}"
+    }
+}
 class M4ulinks : ExtractorApi() {
     override val name            = "M4ulinks"
     override val mainUrl         = "https://m4ulinks.com"
@@ -242,30 +429,6 @@ open class HubCloud : ExtractorApi() {
                     )
                 }
 
-                /*
-                "10gbps" in label -> {
-                    var current = link
-
-                    repeat(3) {
-                        val resp = app.get(current, allowRedirects = false)
-                        val loc = resp.headers["location"] ?: return@repeat
-
-                        if ("link=" in loc) {
-                            callback(
-                                newExtractorLink(
-                                    "$ref 10Gbps [Download]",
-                                    "$ref 10Gbps [Download] $labelExtras",
-                                    loc.substringAfter("link=")
-                                ) { this.quality = quality }
-                            )
-                        }
-                        current = loc
-                    }
-
-                    Log.e(tag, "10Gbps: Redirect limit reached")
-                }
-
-                 */
                 else -> {
                     loadExtractor(link, "", subtitleCallback, callback)
                 }
