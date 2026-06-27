@@ -101,7 +101,7 @@ class AnikageProvider : MainAPI() {
             }
             this.tags = animeInfo.genres
 
-            val subEpisodes = episodesList.reversed().map { ep ->
+            val subEpisodes = episodesList.map { ep ->
                 newEpisode(EpisodeData(slug, ep.number, false).toJson()) {
                     this.episode = ep.number
                     this.name = ep.title ?: "Episode ${ep.number}"
@@ -113,7 +113,7 @@ class AnikageProvider : MainAPI() {
             }
             addEpisodes(DubStatus.Subbed, subEpisodes)
 
-            val dubEpisodes = episodesList.reversed().map { ep ->
+            val dubEpisodes = episodesList.map { ep ->
                 newEpisode(EpisodeData(slug, ep.number, true).toJson()) {
                     this.episode = ep.number
                     this.name = ep.title ?: "Episode ${ep.number}"
