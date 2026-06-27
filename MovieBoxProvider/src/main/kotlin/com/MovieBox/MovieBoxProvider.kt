@@ -61,9 +61,7 @@ class MovieBoxProvider(private val sharedPref: SharedPreferences? = null) : Main
             "https://api4sg.aoneroom.com",
             "https://api3.aoneroom.com",
         )
-        private const val TOKEN_B64 = "ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SjFhV1FpT2pJME1UUTFOak0yTkRneU9USTJOelEzTnpZc0ltVjRjQ0k2TVRjNU1ESTFNemc0T1N3aWFXRjBJam94TnpneU5EYzNOVGc1ZlEuUUFLR1Z4SGd6VDItQjVnRWhUT2NCREVwM0Rla0RKcmdnVFBteVViVXJ1QQ=="
-        // Hardcoded fallback; actual token is refreshed from server x-user response headers
-        val BEARER_TOKEN: String get() = base64Decode(TOKEN_B64)
+        var bearerToken: String? = null
 
         /** Decode the exp (expiry) Unix-seconds from a JWT without a library. */
         fun decodeJwtExpiry(token: String): Long {
@@ -89,7 +87,7 @@ class MovieBoxProvider(private val sharedPref: SharedPreferences? = null) : Main
     override var mainUrl = sharedPref?.getString("moviebox_host", HOST_POOL[4]) ?: HOST_POOL[4]
 
     // ── Token management ────────────────────────────────────────────────────────
-    private val PREF_TOKEN_KEY = "moviebox_bearer_token"
+    private val PREF_TOKEN_KEY = "moviebox_bearer_token_v3"
 
     /**
      * Persist a fresh JWT received from the server's x-user response header.
@@ -98,17 +96,53 @@ class MovieBoxProvider(private val sharedPref: SharedPreferences? = null) : Main
     private fun saveToken(token: String?) {
         if (token.isNullOrBlank()) return
         if (!isTokenValid(token)) return          // don't cache an already-expired token
+        bearerToken = token
         sharedPref?.edit()?.putString(PREF_TOKEN_KEY, token)?.apply()
     }
 
     /**
      * Return the best available JWT:
-     *   1. A valid (non-expired) token previously cached in SharedPreferences, or
-     *   2. The hardcoded fallback token compiled into the extension.
+     *   1. A valid (non-expired) token previously cached in memory/SharedPreferences
+     *   2. If none, fetches a fresh anonymous token from the server.
      */
-    private fun getCachedToken(): String {
+    private suspend fun getCachedToken(): String {
+        if (isTokenValid(bearerToken)) return bearerToken!!
         val saved = sharedPref?.getString(PREF_TOKEN_KEY, null)
-        return if (isTokenValid(saved)) saved!! else BEARER_TOKEN
+        if (isTokenValid(saved)) {
+            bearerToken = saved
+            return saved!!
+        }
+        
+        // Fetch new anonymous token
+        val url = "$mainUrl/wefeed-mobile-bff/tab/ranking-list?tabId=0&categoryType=4516404531735022304&page=1&perPage=1"
+        val (brand, model) = randomBrandModel()
+        val xClientToken = generateXClientToken()
+        val xTrSignature = generateXTrSignature("GET", "application/json", "application/json", url)
+        
+        val headers = mapOf(
+            "user-agent" to "com.community.oneroom/50020088 (Linux; U; Android 13; en_US; $brand; Build/TQ3A.230901.001; Cronet/145.0.7582.0)",
+            "accept" to "application/json",
+            "content-type" to "application/json",
+            "x-client-token" to xClientToken,
+            "x-tr-signature" to xTrSignature,
+            "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","device_id":"$deviceId","install_store":"ps","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":""}""",
+            "x-client-status" to "0"
+        )
+        
+        try {
+            val response = app.get(url, headers = headers)
+            val xUser = response.headers["x-user"]
+            if (!xUser.isNullOrBlank()) {
+                val token = jacksonObjectMapper().readTree(xUser)["token"]?.asText()
+                if (token != null) {
+                    saveToken(token)
+                    return token
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return ""
     }
 
     /**

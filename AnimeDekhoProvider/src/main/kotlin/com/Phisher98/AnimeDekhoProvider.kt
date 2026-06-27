@@ -151,7 +151,7 @@ open class AnimeDekhoProvider : MainAPI() {
             }
         } else {
                 val tmdbIdFinal = tmdbId ?: aniZipData?.mappings?.themoviedbId
-                val tmdbSeasonData = mutableMapOf<Int, org.json.JSONObject>()
+                val tmdbSeasonData = mutableMapOf<Int, TmdbSeasonResponse>()
                 val apiKey = "1865f43a0549ca50d341dd9ab8b29f49"
 
                 val episodesList = document.select("ul.seasons-lst li").mapNotNull { it }
@@ -161,9 +161,8 @@ open class AnimeDekhoProvider : MainAPI() {
 
                 if (tmdbIdFinal != null) {
                     seasonsPresent.amap { s ->
-                        runCatching {
-                            val res = app.get("https://api.themoviedb.org/3/tv/$tmdbIdFinal/season/$s?api_key=$apiKey").text
-                            tmdbSeasonData[s] = org.json.JSONObject(res)
+                        app.get("https://api.themoviedb.org/3/tv/$tmdbIdFinal/season/$s?api_key=$apiKey").parsedSafe<TmdbSeasonResponse>()?.let { res ->
+                            tmdbSeasonData[s] = res
                         }
                     }
                 }
@@ -180,44 +179,33 @@ open class AnimeDekhoProvider : MainAPI() {
                     val epNum = epNumStr?.toIntOrNull()
                     
                     val tmdbEp = if (season != null && epNum != null) {
-                        val epsArray = tmdbSeasonData[season]?.optJSONArray("episodes")
-                        var found: org.json.JSONObject? = null
-                        if (epsArray != null) {
-                            for (i in 0 until epsArray.length()) {
-                                val ep = epsArray.getJSONObject(i)
-                                if (ep.optInt("episode_number") == epNum) {
-                                    found = ep
-                                    break
-                                }
-                            }
-                        }
-                        found
+                        tmdbSeasonData[season]?.episodes?.find { it.episode_number == epNum }
                     } else null
 
                     val meta = if (tmdbEp == null && (season == 1 || season == null)) aniZipData?.episodes?.get(epNumStr ?: "") else null
 
                     newEpisode(Media(href, mediaType = 2).toJson())
                     {
-                        this.name = tmdbEp?.optString("name")?.takeIf { it.isNotBlank() } ?: meta?.title?.get("en") ?: meta?.title?.get("x-jat") ?: name
+                        this.name = tmdbEp?.name?.takeIf { it.isNotBlank() } ?: meta?.title?.get("en") ?: meta?.title?.get("x-jat") ?: name
                         
-                        val tmdbImage = tmdbEp?.optString("still_path")?.takeIf { it.isNotBlank() && it != "null" }?.let { "https://image.tmdb.org/t/p/w500$it" }
+                        val tmdbImage = tmdbEp?.still_path?.takeIf { it.isNotBlank() && it != "null" }?.let { "https://image.tmdb.org/t/p/w500$it" }
                         this.posterUrl = tmdbImage ?: meta?.image ?: poster
                         
                         this.season = season
                         this.episode = epNum
-                        this.description = tmdbEp?.optString("overview")?.takeIf { it.isNotBlank() } ?: meta?.overview
+                        this.description = tmdbEp?.overview?.takeIf { it.isNotBlank() } ?: meta?.overview
                         
-                        val airDate = tmdbEp?.optString("air_date")?.takeIf { it.isNotBlank() && it != "null" } ?: meta?.airDateUtc
+                        val airDate = tmdbEp?.air_date?.takeIf { it.isNotBlank() && it != "null" } ?: meta?.airDateUtc
                         airDate?.let { addDate(it) }
                         
-                        val vote = tmdbEp?.optDouble("vote_average")
+                        val vote = tmdbEp?.vote_average
                         if (vote != null && vote > 0) {
                             this.score = Score.from10(vote.toString())
                         } else {
                             meta?.rating?.let { this.score = Score.from10(it) }
                         }
                         
-                        this.runTime = tmdbEp?.optInt("runtime")?.takeIf { it > 0 } ?: meta?.runtime
+                        this.runTime = tmdbEp?.runtime?.takeIf { it > 0 } ?: meta?.runtime
                     }
                 }
             val recommendations = document.select("div.swiper-wrapper article").map {
@@ -347,4 +335,18 @@ data class MetaAnimeData(
     @param:JsonProperty("images") val images: List<MetaImage>?,
     @param:JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?,
     @param:JsonProperty("mappings") val mappings: MetaMappings? = null
+)
+
+data class TmdbSeasonResponse(
+    val episodes: List<TmdbEpisode>?
+)
+
+data class TmdbEpisode(
+    val episode_number: Int?,
+    val name: String?,
+    val still_path: String?,
+    val overview: String?,
+    val air_date: String?,
+    val vote_average: Double?,
+    val runtime: Int?
 )
