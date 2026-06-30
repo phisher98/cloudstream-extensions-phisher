@@ -114,7 +114,16 @@
                 android:id="@+id/cf_bypass_btn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🛡️ Bypass Cloudflare"
+                android:text="Bypass Cloudflare"
+                android:textSize="14sp"
+                android:padding="12dp" />
+
+            <Button
+                android:id="@+id/cf_clear_btn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Clear CF Cookies"
                 android:textSize="14sp"
                 android:padding="12dp" />
 

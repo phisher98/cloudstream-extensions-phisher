@@ -18,11 +18,8 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.CommonActivity.showToast
 
 /**
  * Full-screen BottomSheet that loads [targetUrl] in a real WebView so Cloudflare's
@@ -122,17 +119,18 @@ class CloudflareWebViewDialog(
     private fun scheduleNextPoll() {
         pollElapsedMs += POLL_INTERVAL_MS
         updateStatus("⏳ Waiting for cookies… (${pollElapsedMs / 1000}s)")
-        
-        // If 0-click Turnstile didn't solve within 3.5 seconds, it probably needs a manual click.
-        // Make the dialog visible to the user.
-        if (pollElapsedMs == 3500L) {
+
+        // If the 0-click Turnstile hasn't solved after the first poll (2 s), it likely needs
+        // a manual interaction. Expand the BottomSheet so the user can see and tap the CAPTCHA.
+        // (pollElapsedMs == 3500L could never be reached since steps are 2000 ms apart.)
+        if (pollElapsedMs >= POLL_INTERVAL_MS) {
             (dialog as? com.google.android.material.bottomsheet.BottomSheetDialog)?.behavior?.apply {
                 skipCollapsed = true
                 peekHeight = android.view.WindowManager.LayoutParams.MATCH_PARENT
                 state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
             }
         }
-        
+
         handler.postDelayed(cookiePollRunnable, POLL_INTERVAL_MS)
     }
 

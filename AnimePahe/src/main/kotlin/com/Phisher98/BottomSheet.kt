@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.CookieManager
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.RadioButton
@@ -111,6 +112,37 @@ class BottomFragment(private val plugin: AnimePaheProviderPlugin) : BottomSheetD
             bypassBtn.text = "✅ CF Cookies Saved – Refresh"
         } else {
             bypassBtn.text = "🛡️ Bypass Cloudflare"
+        }
+
+        // ---- Clear CF Cookies button -----------------------------------------
+        val clearBtn = view.findView<Button>("cf_clear_btn")
+        clearBtn.setOnClickListener {
+            context?.let { ctx ->
+                AlertDialog.Builder(ctx)
+                    .setTitle("Clear CF Cookies?")
+                    .setMessage("This will remove the saved Cloudflare cookies and User-Agent. You will need to bypass Cloudflare again before streaming.")
+                    .setPositiveButton("Clear") { _, _ ->
+                        // Remove from Android's CookieManager for the saved host
+                        val host = AnimePaheProviderPlugin.cfCookieHost
+                        if (host.isNotBlank()) {
+                            val cm = CookieManager.getInstance()
+                            // Remove individual CF cookies by setting them expired
+                            listOf("cf_clearance", "__ddg1_", "__ddg2_", "__cfruid").forEach { name ->
+                                cm.setCookie(host, "$name=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT")
+                            }
+                            cm.flush()
+                        }
+                        // Clear plugin store
+                        AnimePaheProviderPlugin.cfCookies    = ""
+                        AnimePaheProviderPlugin.cfUserAgent  = ""
+                        AnimePaheProviderPlugin.cfCookieHost = ""
+                        // Reset bypass button label
+                        bypassBtn.text = "🛡️ Bypass Cloudflare"
+                        Toast.makeText(ctx, "✅ CF Cookies cleared", Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton("Cancel") { d, _ -> d.dismiss() }
+                    .show()
+            }
         }
         // -----------------------------------------------------------------------
 
