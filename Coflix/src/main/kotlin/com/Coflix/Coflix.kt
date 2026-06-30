@@ -13,7 +13,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
 class Coflix : MainAPI() {
-    override var mainUrl              = "https://coflix.wales"
+    override var mainUrl              = "https://coflix.trade"
     override var name                 = "Coflix"
     override val hasMainPage          = true
     override var lang                 = "fr"
