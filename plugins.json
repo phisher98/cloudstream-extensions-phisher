@@ -86,7 +86,7 @@
             "AnimeMovie",
             "OVA"
         ],
-        "iconUrl": "https://anidb.app/images/fav-512.png",
+        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/anidb.png",
         "apiVersion": 1,
         "fileHash": "sha256-73c4ce04c7aea934d0feac9d5f4f90e814b6b4dddb12004c7e1b0de9e07c0362"
     },
@@ -355,14 +355,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Aniworld.cs3",
         "status": 1,
-        "version": 10,
+        "version": 11,
         "name": "Aniworld",
         "internalName": "Aniworld",
         "authors": [
             "Phisher98,Hexated"
         ],
         "description": "Include: Serienstream (Login Required under Extension Settings)",
-        "fileSize": 54024,
+        "fileSize": 54002,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "de",
         "tvTypes": [
@@ -372,7 +372,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=aniworld.to&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-7ba5b927ebfc8a639af5a50b39ac1d89c44ec06be1007527744d34eba21a7f46"
+        "fileHash": "sha256-62d8da0e93f132a701efacc6ebf94ba6109aac75f9854c5a461bf963c766bf90"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anizone.cs3",
@@ -446,14 +446,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Cinemacity.cs3",
         "status": 1,
-        "version": 9,
+        "version": 11,
         "name": "Cinemacity",
         "internalName": "Cinemacity",
         "authors": [
             "Phisher98"
         ],
         "description": "Watch Movies & TvSeries (Multi-Lang/Audio)",
-        "fileSize": 45122,
+        "fileSize": 68228,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -462,7 +462,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=cinemacity.cc&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-4e25507ec749df5a46f66d1f00d7f5aeff25edab15eaac3a6bfcc3f798b1e847"
+        "fileHash": "sha256-41d1f6cbc8bbbdb0cf99257017c5cb954681e97883775b8e414ee90e14e2b8cb"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
@@ -850,13 +850,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.cs3",
         "status": 1,
-        "version": 23,
+        "version": 24,
         "name": "Kickassanime",
         "internalName": "Kickassanime",
         "authors": [
             "Phisher98,Hexated"
         ],
-        "fileSize": 53835,
+        "fileSize": 56163,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -866,10 +866,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/KAA.png",
         "apiVersion": 1,
-        "fileHash": "sha256-f49b3137d228396aca4998f4659fa97fb5a2461141ee10a7e0534caf3e8b29b2",
-        "jarFileSize": 252991,
+        "fileHash": "sha256-94acac0d8673f6a4e8df8a1c49effaf98b58bcdeb00c52c2e07fc6ad0f206c49",
+        "jarFileSize": 262968,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.jar",
-        "jarHash": "sha256-ade798270a6bce2a0a4e4947881fde9488afa4ceed0cbe1894b008669f23db70"
+        "jarHash": "sha256-a3a809a77775c37154df91b234c2b726f27d40af80395c9a3414402ae985dcee"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/KisskhProvider.cs3",
