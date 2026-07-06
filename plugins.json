@@ -71,14 +71,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniDb.cs3",
         "status": 1,
-        "version": 7,
+        "version": 8,
         "name": "AniDb",
         "internalName": "AniDb",
         "authors": [
             "Phisher98"
         ],
         "description": "Animes",
-        "fileSize": 53238,
+        "fileSize": 53411,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -88,7 +88,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/anidb.png",
         "apiVersion": 1,
-        "fileHash": "sha256-a24fe76a9d39d5c852ed0291f14e4652446d0b42d3a5f36e6867c1d2d0759159"
+        "fileHash": "sha256-a50556e3ff650395a9754af3fd83b3fd30bc9c8a87f47264e836078a8d9ac840"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anikage.cs3",
@@ -258,14 +258,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AnimePahe.cs3",
         "status": 1,
-        "version": 29,
+        "version": 30,
         "name": "AnimePahe",
         "internalName": "AnimePahe",
         "authors": [
             "Cloudburst,Lorem Ipsum,Phisher98"
         ],
         "description": "Animes (SUB/DUB)",
-        "fileSize": 76465,
+        "fileSize": 76650,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -275,7 +275,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png",
         "apiVersion": 1,
-        "fileHash": "sha256-a9a5bfc05fc61cff8c1fed2e58ff43ad8453f36cc53b2bfcc313ffa9c84fc2af"
+        "fileHash": "sha256-6fd8fd0d0ba948d285666f2aacdb8b6a047c6e93658f326a462cc7703d1a16b2"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animesalt.cs3",
@@ -453,7 +453,7 @@
             "Phisher98"
         ],
         "description": "Watch Movies & TvSeries (Multi-Lang/Audio)",
-        "fileSize": 69599,
+        "fileSize": 69802,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -462,7 +462,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=cinemacity.cc&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-f29572fb53154db129201e30a2e0b20723841175235681b882600ae55cddccda"
+        "fileHash": "sha256-4bba33b3b8778204dde994df89e9c0a47055fd8437979d4743aceb4ca7e74a3e"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
