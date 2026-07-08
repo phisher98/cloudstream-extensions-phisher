@@ -467,14 +467,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
         "status": 1,
-        "version": 4,
+        "version": 5,
         "name": "CloudPlay",
         "internalName": "CloudPlay",
         "authors": [
             "Phisher98"
         ],
         "description": "CloudPlay Live TV Extension",
-        "fileSize": 30933,
+        "fileSize": 30954,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -482,7 +482,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/cloudplay.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-72b25a214767538fa8ba598f681f7d5bbc224c2dac96b17e3babc4162938d94c"
+        "fileHash": "sha256-c290ba97a1a00d8a9d6e2bde9276e741d2361a892ad157b79c220a37f32b24ea"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Coflix.cs3",
