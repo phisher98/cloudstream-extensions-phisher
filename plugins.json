@@ -1753,7 +1753,7 @@
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/XDMovies.cs3",
-        "status": 0,
+        "status": 1,
         "version": 1,
         "name": "XDMovies",
         "internalName": "XDMovies",
