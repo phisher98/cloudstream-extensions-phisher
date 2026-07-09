@@ -1786,7 +1786,7 @@
             "Phisher98"
         ],
         "description": "YTS Movies 4K Support (Torrent)",
-        "fileSize": 15729,
+        "fileSize": 15727,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1795,10 +1795,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/yts.png",
         "apiVersion": 1,
-        "fileHash": "sha256-d7c7185019183200712abab55d53283af2527d9f9cd56913ef9ae443a487ee32",
-        "jarFileSize": 78912,
+        "fileHash": "sha256-bdeb0095477d98fc074d0f1bda55c94039a0bfe221e7c7adad191f722540c47b",
+        "jarFileSize": 78914,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/YTS.jar",
-        "jarHash": "sha256-f8818a3f640aa8b6dedd190a195b4a02a40d4085a102b6a0413826f245da9ede"
+        "jarHash": "sha256-37afec8d6d19311f478ce9a8f1fab2b4536558af14fe66e100b3f47e56d7ad4d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Zinkmovies.cs3",
