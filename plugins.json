@@ -78,7 +78,7 @@
             "Phisher98"
         ],
         "description": "Animes",
-        "fileSize": 53889,
+        "fileSize": 54082,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -88,7 +88,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/anidb.png",
         "apiVersion": 1,
-        "fileHash": "sha256-1cf198ff757cc8a366bba89f249be8e82edf7445de02d6cf3cc6950c0f4e9d59"
+        "fileHash": "sha256-69d782d79dad3362cb4600576f2863235616f1ca6e57e99a903d763d9c90e1fe"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anikage.cs3",
@@ -265,7 +265,7 @@
             "Cloudburst,Lorem Ipsum,Phisher98"
         ],
         "description": "Animes (SUB/DUB)",
-        "fileSize": 77127,
+        "fileSize": 77254,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -275,7 +275,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png",
         "apiVersion": 1,
-        "fileHash": "sha256-76850fafd471b747cd01f9d07c3f74c08797105b99ea5e31670dbbf12a431cd0"
+        "fileHash": "sha256-7068ae3b756a16b2754d898f507118f0d1909060485fbd12dda1c83fecca97e5"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animesalt.cs3",
@@ -453,7 +453,7 @@
             "Phisher98"
         ],
         "description": "Watch Movies & TvSeries (Multi-Lang/Audio)",
-        "fileSize": 70078,
+        "fileSize": 70204,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -462,7 +462,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=cinemacity.cc&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-cdba01497f83b1eb5401ae8454fac317fa779771705f5e610935d9a6164d8024"
+        "fileHash": "sha256-c39771a2dd92498acf1d42e49742f1f34b346d8fc8311e81a86e4292e12fdab0"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
@@ -1418,7 +1418,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 953098,
+        "fileSize": 952931,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1431,7 +1431,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-a7c41d035e139d907e8fdc3e4cdc9e060e78166ca87d76bb4fc7877ff661ca01"
+        "fileHash": "sha256-86d3618e96182e4203faa8ddabfc2aab4495de674d9c0863ecbcb0f8986aa112"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
@@ -1754,14 +1754,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/XDMovies.cs3",
         "status": 1,
-        "version": 2,
+        "version": 3,
         "name": "XDMovies",
         "internalName": "XDMovies",
         "authors": [
             "Phisher98"
         ],
         "description": "Watch Latest Movies",
-        "fileSize": 108309,
+        "fileSize": 109486,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1774,7 +1774,7 @@
         ],
         "iconUrl": "https://top.xdmovies.wtf/assets/logo1.png",
         "apiVersion": 1,
-        "fileHash": "sha256-65402e271220849164fbe918244dd2266b98ba84290dffa0059f710e07254864"
+        "fileHash": "sha256-4bc7dce0002eb0821d9a1eac2e4ac4556b5dc368dc683ab0ff8588a3273c2308"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/YTS.cs3",
