@@ -15,8 +15,6 @@ If you find this project helpful, consider supporting its development!
 ### 🔹 Phisher Cloudstream Plugin Server
 [![Discord](https://invidget.switchblade.xyz/3VmSzGeCTz)](https://discord.com/invite/3VmSzGeCTz)
 
-### 🔸 Cloudstream Plugin Server
-[![Discord](https://invidget.switchblade.xyz/JrGk2MjX7S)](https://discord.com/invite/JrGk2MjX7S)
 
 ---
 
