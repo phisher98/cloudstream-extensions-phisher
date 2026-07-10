@@ -50,13 +50,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anichi.cs3",
         "status": 1,
-        "version": 18,
+        "version": 19,
         "name": "Anichi",
         "internalName": "Anichi",
         "authors": [
             "Hexated,Phisher98"
         ],
-        "fileSize": 110525,
+        "fileSize": 111978,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -66,7 +66,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Allanime.png",
         "apiVersion": 1,
-        "fileHash": "sha256-cd377787e42ffa591eaa38dfc4a3f02436e3608e4b6b568fca67ba25745a66d7"
+        "fileHash": "sha256-a33d4f7ee0b2741c916f7b5a8cebc904bc30bd156ee334a49803e60526b06a04"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniDb.cs3",
