@@ -465,6 +465,26 @@
         "fileHash": "sha256-e8dfd2cdb738b2174d95400c4679d570bf80240e413869c8937571a762ef8d26"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudFlare.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "CloudFlare",
+        "internalName": "CloudFlare",
+        "authors": [
+            "Phisher98"
+        ],
+        "description": "Cloudflare Bypass Utility",
+        "fileSize": 25423,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "en",
+        "tvTypes": [
+            "Live"
+        ],
+        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/cf.png",
+        "apiVersion": 1,
+        "fileHash": "sha256-a0435245d7c502165429c2c75122a9c154ba968aeed4104c4e9e8d6edf72e7fc"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
         "status": 1,
         "version": 6,
