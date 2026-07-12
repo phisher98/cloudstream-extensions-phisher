@@ -265,7 +265,7 @@
             "Cloudburst,Lorem Ipsum,Phisher98"
         ],
         "description": "Animes (SUB/DUB)",
-        "fileSize": 79017,
+        "fileSize": 79241,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -275,7 +275,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png",
         "apiVersion": 1,
-        "fileHash": "sha256-afdfc7bb9709983e3f2ebf9551a04bc056fd5962b577fce0ec1b3cc5be42129c"
+        "fileHash": "sha256-66891ef72f4c69173dfe5ba6c06b9ecf10b2297b1a910d4241380de0f3752436"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animesalt.cs3",
