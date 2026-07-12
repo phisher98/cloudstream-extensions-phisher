@@ -474,7 +474,7 @@
             "Phisher98"
         ],
         "description": "Cloudflare Bypass Utility",
-        "fileSize": 25423,
+        "fileSize": 25404,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -482,7 +482,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/cf.png",
         "apiVersion": 1,
-        "fileHash": "sha256-a0435245d7c502165429c2c75122a9c154ba968aeed4104c4e9e8d6edf72e7fc"
+        "fileHash": "sha256-5ff34e4a9877f07c7fdea47d8ee7b64211f9ee6852b1f736d86c11ea8185ed92"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
