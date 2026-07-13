@@ -1058,14 +1058,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Movies4u.cs3",
         "status": 1,
-        "version": 9,
+        "version": 10,
         "name": "Movies4u",
         "internalName": "Movies4u",
         "authors": [
             "Phisher98"
         ],
         "description": "Movies4u",
-        "fileSize": 73611,
+        "fileSize": 74014,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1074,10 +1074,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/movies4u.png",
         "apiVersion": 1,
-        "fileHash": "sha256-11086c08af3a4050fbe900f312bb168376cbf4f7c3fdfa5f371f0cfb0c17701a",
-        "jarFileSize": 365701,
+        "fileHash": "sha256-3b685b35874423c2705f579ef36d1759f9c2ff19bbe5f3fa48a846bd9e62291e",
+        "jarFileSize": 368382,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Movies4u.jar",
-        "jarHash": "sha256-116a2147cf9f8964cd0d87f7aac5d8ca0591539af6617d1142c61f2a36cde153"
+        "jarHash": "sha256-0d8a6c230bb8e671af77d4b17098b52c9b6ce90462b26cce107d79418d8c0f1d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MPlayerProvider.cs3",
