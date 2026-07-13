@@ -1178,7 +1178,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OnePace.cs3",
         "status": 1,
-        "version": 20,
+        "version": 21,
         "name": "OnePace",
         "internalName": "OnePace",
         "authors": [
@@ -1193,10 +1193,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/onepace.png",
         "apiVersion": 1,
-        "fileHash": "sha256-415c9361fed1df7079396919923e5b5cc095b2d44c1c7ae926e8380e22c94bc7",
+        "fileHash": "sha256-25074252da91ed1719a9e117f76e58674b26c459f641f4c7a71b29c3bfef777c",
         "jarFileSize": 186486,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OnePace.jar",
-        "jarHash": "sha256-daf11de926ac447494a8b46a374d68c26f727361dff424b812bdbd33d98c7cd2"
+        "jarHash": "sha256-48efb2d49a1a98d43e2da4eba8cf39400e25335f320c02a56aaeb4659b3bef2e"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OneTouchTV.cs3",
