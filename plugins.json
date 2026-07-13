@@ -1594,14 +1594,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Toonstream.cs3",
         "status": 1,
-        "version": 5,
+        "version": 6,
         "name": "Toonstream",
         "internalName": "Toonstream",
         "authors": [
             "Phisher98"
         ],
         "description": "ToonStream Multi Language",
-        "fileSize": 30823,
+        "fileSize": 37698,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1611,10 +1611,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/toonstream.png",
         "apiVersion": 1,
-        "fileHash": "sha256-7dd801fb0cb1876788d7b11ab27e4ad308efa4010a1ed49d56df7b81d3606814",
-        "jarFileSize": 131515,
+        "fileHash": "sha256-74747b052cf726c43584469374b11586e4ac720bf3f5bf201817c4b26637302a",
+        "jarFileSize": 167755,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Toonstream.jar",
-        "jarHash": "sha256-2f961f4ee9afa1fa51c0fd7ca850af51683d1c9900a89424846f99d95ec54cf2"
+        "jarHash": "sha256-52ff7534c02ce1579a07064a81adb50c6a1b6008aebc27b9bebc77a9c0021432"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/ToonTales.cs3",
