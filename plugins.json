@@ -27,14 +27,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AllWish.cs3",
         "status": 1,
-        "version": 12,
+        "version": 13,
         "name": "AllWish",
         "internalName": "AllWish",
         "authors": [
             "Phisher98"
         ],
         "description": "Anime from all-wish.me",
-        "fileSize": 42620,
+        "fileSize": 42556,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -42,10 +42,7 @@
         ],
         "iconUrl": "https://all-wish.me/assets/logo.png",
         "apiVersion": 1,
-        "fileHash": "sha256-7edbc1db9eea4d03a50e4149e57713b5decae30d242b457041384f87cd5f604c",
-        "jarFileSize": 167822,
-        "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AllWish.jar",
-        "jarHash": "sha256-b9f8e1976bba95236f508a7c263da1611920a5348dd6539bb66138c7268ae5e7"
+        "fileHash": "sha256-a1fa12ec183262b989be4ea031cced867684a041f2ac51cc9186d78462ea63d3"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anichi.cs3",
