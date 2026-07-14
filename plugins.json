@@ -494,7 +494,7 @@
             "Phisher98"
         ],
         "description": "Movies,Series and Anime French Extension ",
-        "fileSize": 29922,
+        "fileSize": 28011,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "fr",
         "tvTypes": [
@@ -503,10 +503,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Coflix.png",
         "apiVersion": 1,
-        "fileHash": "sha256-e1c84cf9dc6aa2485711d21501f3a44c0a1aaac090d1a775b49acffe808a89e0",
-        "jarFileSize": 129724,
+        "fileHash": "sha256-bf1e59e2058463953105284632d89274c57e42d92ed920deef45d1de82e04921",
+        "jarFileSize": 122082,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Coflix.jar",
-        "jarHash": "sha256-34008a6ed67cfd3cf5eb58cf596eb21fddbf08499668eaf1b9d547d47ec85520"
+        "jarHash": "sha256-850f1b7491263bf3d2430c4808965dd88838d2b773da8a50f93b0933cbc4fa93"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Desicinemas.cs3",
