@@ -78,7 +78,7 @@
             "Phisher98"
         ],
         "description": "Animes",
-        "fileSize": 56270,
+        "fileSize": 56557,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -88,7 +88,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/anidb.png",
         "apiVersion": 1,
-        "fileHash": "sha256-c44f3d31395a88ac6117a29e6ddf95281c7af5b413ae81dc3039bfa83ef3bd1d"
+        "fileHash": "sha256-edeb8b199f2e7aaa723696499a87d3c1d6e03d7456e438f8c293d1925ded9015"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anikage.cs3",
