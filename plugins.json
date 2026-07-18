@@ -9,7 +9,7 @@
             "Phisher98"
         ],
         "description": "Indian MultiLanguage Provider (Mostly Hindi)",
-        "fileSize": 37628,
+        "fileSize": 36787,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -19,10 +19,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/AllMovieLandProvider/icon.png",
         "apiVersion": 1,
-        "fileHash": "sha256-c09315b4e8dd3e2eb76e6e1722fae5b63dccaaced58aae3ee93dfea692d3ddb4",
-        "jarFileSize": 158895,
+        "fileHash": "sha256-8e9e380ed609587abbdadf4902d800ea0f5e77744da48c4b0f2ed2b1932cdd95",
+        "jarFileSize": 155786,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AllMovieLandProvider.jar",
-        "jarHash": "sha256-4d3dc1991b79e473e4ea1dd0c0be24a1a22b637d3c363aa0c8dccd6036f24be3"
+        "jarHash": "sha256-0fb475995dd81c60307995c28735877789ecd5395fc1e3c21f718d241a29e480"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AllWish.cs3",
@@ -446,14 +446,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Cinemacity.cs3",
         "status": 1,
-        "version": 18,
+        "version": 19,
         "name": "Cinemacity",
         "internalName": "Cinemacity",
         "authors": [
             "Phisher98"
         ],
         "description": "Watch Movies & TvSeries (Multi-Lang/Audio)",
-        "fileSize": 73029,
+        "fileSize": 75809,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -462,7 +462,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=cinemacity.cc&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-0165bf3a7e06ced81dfa3ac86a10353a91579c1f46283b36823a0b80c45c460e"
+        "fileHash": "sha256-bd47f6200e037cb82d2a2cf238a47c3305cd969e286c7038be038fc8a839d47d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
@@ -558,14 +558,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/DoraBash.cs3",
         "status": 1,
-        "version": 6,
+        "version": 7,
         "name": "DoraBash",
         "internalName": "DoraBash",
         "authors": [
             "Phisher98"
         ],
         "description": "Doremon Show in Hindi",
-        "fileSize": 55275,
+        "fileSize": 82140,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -575,7 +575,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=dorabash.in&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-2bea5d0e851b840f57a86db8ea4334a11e4ed274349d1116c028967b50de855a"
+        "fileHash": "sha256-23ba7412c384d93b43a1552b2ede5529c34d339f7af5d14d09177393a54c4b89"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/DudeFilms.cs3",
@@ -601,13 +601,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Fibwatch.cs3",
         "status": 1,
-        "version": 7,
+        "version": 8,
         "name": "Fibwatch",
         "internalName": "Fibwatch",
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 40226,
+        "fileSize": 42345,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -616,7 +616,7 @@
         ],
         "iconUrl": "https://f.pondit.xyz/fibwatch-logo.png",
         "apiVersion": 1,
-        "fileHash": "sha256-284045549b0f19d593a56801133cb287a632f0a69eb1ccd2416c9a511bdb5bc6"
+        "fileHash": "sha256-08b70684d89f34b446b4755f07dd987e0200799adf6bf7b0ae09462100842d5c"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Fivemovierulz.cs3",
@@ -1418,7 +1418,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 954174,
+        "fileSize": 954741,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1431,7 +1431,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-d6e72c9c6ecc6eebee12d8f3982659c41e18f817d63848b34ac0ee6927ff52b3"
+        "fileHash": "sha256-e857464e0733c899f4fc6945c002a0c6112a1fe66787d6d6555b5b2b41880483"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
