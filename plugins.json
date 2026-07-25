@@ -2,14 +2,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AllMovieLandProvider.cs3",
         "status": 1,
-        "version": 22,
+        "version": 23,
         "name": "AllMovieLandProvider",
         "internalName": "AllMovieLandProvider",
         "authors": [
             "Phisher98"
         ],
         "description": "Indian MultiLanguage Provider (Mostly Hindi)",
-        "fileSize": 36817,
+        "fileSize": 57618,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -19,10 +19,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/AllMovieLandProvider/icon.png",
         "apiVersion": 1,
-        "fileHash": "sha256-e21dbe950eefb6bafbcb4c96d3e6854a0521d2682f22e8fab92a960f58df70ca",
-        "jarFileSize": 155934,
+        "fileHash": "sha256-938e5d6b1a41f3f625384a9cd559811b63528da0c3cc26c8adca2efbf0cc65c9",
+        "jarFileSize": 297020,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AllMovieLandProvider.jar",
-        "jarHash": "sha256-0247bd84b721b619d3f62fb7db0a51c107fe74ff2af3bd67055251cf3e88957d"
+        "jarHash": "sha256-c75e73bd21d30fa6a2edff462c91c3884e475c16b866261a52c2cc1b98a7f609"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AllWish.cs3",
