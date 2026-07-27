@@ -731,7 +731,7 @@
             "Phisher98"
         ],
         "description": "Hdmovie2",
-        "fileSize": 44194,
+        "fileSize": 42311,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -740,10 +740,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/hdmovie2.png",
         "apiVersion": 1,
-        "fileHash": "sha256-f08c36335d9d76f43822522270af828b757e1fb840e881412e3fb2a038dcebd8",
-        "jarFileSize": 193462,
+        "fileHash": "sha256-667d5554b806b059c4f34ebc2dfe40a8796defe08f6f4ca80d186d58201d1f52",
+        "jarFileSize": 178418,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.jar",
-        "jarHash": "sha256-4c5a1a9eadaf59b9db1595f45802787adc4e1785df2e7855506ba145952a9df6"
+        "jarHash": "sha256-68e5c9038f44b78be05a6b1bb087dc5d0e93e28522084052f4d95848bfda4ee0"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hindmoviez.cs3",
