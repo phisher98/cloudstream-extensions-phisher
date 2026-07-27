@@ -722,6 +722,30 @@
         "fileHash": "sha256-b27a093c5c68c59f6ecf0ef734656a6f4861bf1080c67e5fb3fb3ce790d9d6e3"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "Hdmovie2",
+        "internalName": "Hdmovie2",
+        "authors": [
+            "Phisher98"
+        ],
+        "description": "Hdmovie2",
+        "fileSize": 44194,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "hi",
+        "tvTypes": [
+            "TvSeries",
+            "Movie"
+        ],
+        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/hdmovie2.png",
+        "apiVersion": 1,
+        "fileHash": "sha256-f08c36335d9d76f43822522270af828b757e1fb840e881412e3fb2a038dcebd8",
+        "jarFileSize": 193462,
+        "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.jar",
+        "jarHash": "sha256-4c5a1a9eadaf59b9db1595f45802787adc4e1785df2e7855506ba145952a9df6"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hindmoviez.cs3",
         "status": 1,
         "version": 13,
@@ -1045,30 +1069,6 @@
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/moviebox.png",
         "apiVersion": 1,
         "fileHash": "sha256-43e4593be338e8c1ebe10ab9043e19cb2c9b79e64dea2c40b5e38d6f84a344e9"
-    },
-    {
-        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Movierulzhd.cs3",
-        "status": 1,
-        "version": 155,
-        "name": "Movierulzhd",
-        "internalName": "Movierulzhd",
-        "authors": [
-            "Phisher98,hexated"
-        ],
-        "description": "Includes: Hdmovie2,hdmovie6",
-        "fileSize": 59244,
-        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
-        "language": "hi",
-        "tvTypes": [
-            "TvSeries",
-            "Movie"
-        ],
-        "iconUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/Movierulzhd/faviconV2.png",
-        "apiVersion": 1,
-        "fileHash": "sha256-622d5b579857d19541e368dc20147f525c30c904c980a46215ee3470e0cb806d",
-        "jarFileSize": 303847,
-        "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Movierulzhd.jar",
-        "jarHash": "sha256-9962f40d3c14e87f0b0a1cdb021263b84e1fd84152919d9802c20bb8796da439"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Movies4u.cs3",
@@ -1433,7 +1433,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 999387,
+        "fileSize": 1000740,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1446,7 +1446,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-ee8e493f7dc4489b011a2ee7a6ae06cf4acec1e152bf7c4eaf51e3b8d3570221"
+        "fileHash": "sha256-c451f5d9aeba261c3ad2d2703596d27deaf11ac757685026caa8635d5b8216a9"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
