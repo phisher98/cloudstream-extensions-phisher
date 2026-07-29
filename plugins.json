@@ -50,13 +50,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anichi.cs3",
         "status": 1,
-        "version": 23,
+        "version": 24,
         "name": "Anichi",
         "internalName": "Anichi",
         "authors": [
             "Hexated,Phisher98"
         ],
-        "fileSize": 120893,
+        "fileSize": 137615,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -66,7 +66,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Allanime.png",
         "apiVersion": 1,
-        "fileHash": "sha256-afbec402c8a8fdd8c6f9fe6a6c44f11b47b74bdd0ee5f8cfdd1da36c26365b08"
+        "fileHash": "sha256-edffd82ed108cb1aed018e4dfe27792ee6c991d62eb39e2be82d4bd9c9f6129f"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniDb.cs3",
@@ -561,14 +561,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/DoraBash.cs3",
         "status": 1,
-        "version": 7,
+        "version": 8,
         "name": "DoraBash",
         "internalName": "DoraBash",
         "authors": [
             "Phisher98"
         ],
         "description": "Doremon Show in Hindi",
-        "fileSize": 82207,
+        "fileSize": 80661,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -578,7 +578,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=dorabash.in&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-dd1ad48db1e75d27c91e83c106e3f58addc40604c46cf1a0b921936ae8cbaa4a"
+        "fileHash": "sha256-3d5b95882e59b666acb3f7859c5848c060aca1fec30f9f4c7e17fd670c4aba8a"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/DudeFilms.cs3",
