@@ -490,14 +490,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Coflix.cs3",
         "status": 1,
-        "version": 16,
+        "version": 17,
         "name": "Coflix",
         "internalName": "Coflix",
         "authors": [
             "Phisher98"
         ],
         "description": "Movies,Series and Anime French Extension ",
-        "fileSize": 27963,
+        "fileSize": 27965,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "fr",
         "tvTypes": [
@@ -506,10 +506,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Coflix.png",
         "apiVersion": 1,
-        "fileHash": "sha256-dded9ca803f12d3679ed80e66581905b812524dc700aa5daf78b40e969d18a65",
-        "jarFileSize": 121993,
+        "fileHash": "sha256-be4d2c3655e0b75b5eb49dc353644320730f21c1e11375aafee657f94a51b20a",
+        "jarFileSize": 121986,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Coflix.jar",
-        "jarHash": "sha256-3385128130e34ba136a538d45b7b3bc55891d1a03d095dbc154fde56f57de424"
+        "jarHash": "sha256-035091531d21ccb94d91af9fda1e88424d22be447ce09207970907fcdec2878d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Desicinemas.cs3",
@@ -1818,13 +1818,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Zinkmovies.cs3",
         "status": 1,
-        "version": 4,
+        "version": 5,
         "name": "Zinkmovies",
         "internalName": "Zinkmovies",
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 64734,
+        "fileSize": 68058,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1834,9 +1834,9 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/zing.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-4aaf7bb5627f93e5680270f28eb1073aeaed0f9d13f983d4476531eb53c5eece",
-        "jarFileSize": 270931,
+        "fileHash": "sha256-cc0285048eae283b593d6441166a49d491226c32338cd79b1342e510ea72f0e1",
+        "jarFileSize": 277159,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Zinkmovies.jar",
-        "jarHash": "sha256-9a169367ff1c37868e8af0ddc3ef2182378e71b4d49135b73737fbacf10afefe"
+        "jarHash": "sha256-8d5b8cfecbae942cbb75a53042ac6f787ad414f38a658dcd3b1af3e2b9fcab6f"
     }
 ]
