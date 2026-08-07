@@ -431,7 +431,7 @@
             "Phisher98"
         ],
         "description": "Bangla/Hindi Movies/Series",
-        "fileSize": 68352,
+        "fileSize": 68462,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "bn",
         "tvTypes": [
@@ -441,10 +441,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/cinefreak.png",
         "apiVersion": 1,
-        "fileHash": "sha256-25d4466a5b46b07a5910e5220eacff1e89fee8d0b2b093dfda0855493d7fc242",
-        "jarFileSize": 313630,
+        "fileHash": "sha256-1b552e2551d7fcc4ae270f3d14573ffb441856ee07f2cf9f9f387f6ae0b26f2c",
+        "jarFileSize": 313811,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Cinefreak.jar",
-        "jarHash": "sha256-6ee26638bec2f5b292d709ba4a3083b7d94498f8b75a1001fd971436714af174"
+        "jarHash": "sha256-04b418164b509ed5519857ee62d9e461f36e5a2acede5ace792e2fc7cddbef1b"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Cinemacity.cs3",
