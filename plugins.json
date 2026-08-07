@@ -1380,14 +1380,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/RingZ.cs3",
         "status": 1,
-        "version": 9,
+        "version": 10,
         "name": "RingZ",
         "internalName": "RingZ",
         "authors": [
             "Phisher98"
         ],
         "description": "Ringz App",
-        "fileSize": 32034,
+        "fileSize": 29597,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1397,7 +1397,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Ringz.png",
         "apiVersion": 1,
-        "fileHash": "sha256-d0df60c3883774fe93a17c7b4d7b0429c89d1ea3337e89bbf97a3381a1d8d988"
+        "fileHash": "sha256-20df2851ca1e77e47a87225a3647e7f9a87848eb31e3059186e69b3e8d5fc1ec"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/ShowBox.cs3",
