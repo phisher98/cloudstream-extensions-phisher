@@ -1171,14 +1171,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OHLI24.cs3",
         "status": 1,
-        "version": 4,
+        "version": 5,
         "name": "OHLI24",
         "internalName": "OHLI24",
         "authors": [
             "Phisher98"
         ],
         "description": "Anime and movies with Korean subtitles only (no Korean audio)",
-        "fileSize": 19131,
+        "fileSize": 19196,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "ko",
         "tvTypes": [
@@ -1188,7 +1188,7 @@
         ],
         "iconUrl": "https://ani.ohli24.com/img/logo@2x.png",
         "apiVersion": 1,
-        "fileHash": "sha256-ab0372c339557e8f3cea095560645d0a8989985e394e7f0dcba570dce9a2fad2"
+        "fileHash": "sha256-a99cb184b1dfdec744e2839fd63cd5b99326231fc0538eaf821f29a15f8b8038"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OnePace.cs3",
