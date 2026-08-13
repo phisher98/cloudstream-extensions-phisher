@@ -115,6 +115,27 @@
         "jarHash": "sha256-1faa616a4dfa13060bf3a16f98dc42a0791b9b1fb4c3030e4c75a2ba1327ef35"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniKoto.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "AniKoto",
+        "internalName": "AniKoto",
+        "authors": [
+            "phisher98"
+        ],
+        "description": "AniKoto",
+        "fileSize": 41595,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "en",
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie"
+        ],
+        "iconUrl": "https://anikototv.to/AnikotoTheme/assets/images/favicon.png",
+        "apiVersion": 1,
+        "fileHash": "sha256-6032aeba37c8e4b02f74d0d400daab2c4bf2a587b738ebdc8db24b77a7a2f39f"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animeav1.cs3",
         "status": 1,
         "version": 7,
