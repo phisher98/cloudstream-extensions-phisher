@@ -1309,14 +1309,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Piratexplay.cs3",
         "status": 1,
-        "version": 2,
+        "version": 3,
         "name": "Piratexplay",
         "internalName": "Piratexplay",
         "authors": [
             "Phisher98"
         ],
         "description": "Anime/Cartoon in Hindi",
-        "fileSize": 33045,
+        "fileSize": 65121,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1326,10 +1326,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/piratexplay.png",
         "apiVersion": 1,
-        "fileHash": "sha256-d387a463e4cbc54e3456859a8ec8983517cdb9fd31125ecdf78c8428710dc503",
-        "jarFileSize": 132564,
-        "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Piratexplay.jar",
-        "jarHash": "sha256-0723de828c965629a067a08b4d94c40899530da0a573d53425befd5c6065d7e8"
+        "fileHash": "sha256-28f5b8bacff77ceac00a89f9a1d02625321f7f4a2bf655619db7df96270efcf3"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Pmsm.cs3",
