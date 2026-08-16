@@ -1050,6 +1050,30 @@
         "jarHash": "sha256-c0609c8864c47447021249a44dcbf4f78bfcbc73151cb85371cf06b056d73380"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Microtv.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "Microtv",
+        "internalName": "Microtv",
+        "authors": [
+            "Phisher98"
+        ],
+        "description": "Watch short vertical dramas & reels from multiple Indian short platforms",
+        "fileSize": 13192,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "hi",
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/MicroTV.png",
+        "apiVersion": 1,
+        "fileHash": "sha256-f72bef2a68a7455138cf5a2c6385ea6557e95e335130f482dfad1e03fe6d0c51",
+        "jarFileSize": 46590,
+        "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Microtv.jar",
+        "jarHash": "sha256-4822bc065a0d93ef18aba94e46b18b7b9b093ec9cb969646607bdfbc6ba8b53d"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MovieBlast.cs3",
         "status": 1,
         "version": 3,
