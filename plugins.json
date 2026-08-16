@@ -886,28 +886,6 @@
         "fileHash": "sha256-1f11cec270a46c55ac1a122d3c2f4ca48c30a919d09db2b27ae616d69cd9a0be"
     },
     {
-        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/KayiFamilyTv.cs3",
-        "status": 1,
-        "version": 3,
-        "name": "KayiFamilyTv",
-        "internalName": "KayiFamilyTv",
-        "authors": [
-            "KaifTaufiq"
-        ],
-        "description": "KayiFamilyTv has Turkish Drama and Documentaries with English / Spanish Subtitles.",
-        "fileSize": 31838,
-        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
-        "language": "en",
-        "tvTypes": [
-            "Movie",
-            "TvSeries",
-            "Documentary"
-        ],
-        "iconUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/KayiFamilyTv/icon.png",
-        "apiVersion": 1,
-        "fileHash": "sha256-a9aa84ac6d42c7fdbfb702cda645aae9fc486a32755636dab81feb2c611e7773"
-    },
-    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.cs3",
         "status": 1,
         "version": 24,
