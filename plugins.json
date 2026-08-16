@@ -1059,7 +1059,7 @@
             "Phisher98"
         ],
         "description": "Watch short vertical dramas & reels from multiple Indian short platforms",
-        "fileSize": 13192,
+        "fileSize": 37644,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1068,10 +1068,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/MicroTV.png",
         "apiVersion": 1,
-        "fileHash": "sha256-f72bef2a68a7455138cf5a2c6385ea6557e95e335130f482dfad1e03fe6d0c51",
-        "jarFileSize": 46590,
+        "fileHash": "sha256-1ebb7bdaa826bd24b479962b45910c30ee62b6f404d91012bcace54de0e1c14c",
+        "jarFileSize": 179792,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Microtv.jar",
-        "jarHash": "sha256-4822bc065a0d93ef18aba94e46b18b7b9b093ec9cb969646607bdfbc6ba8b53d"
+        "jarHash": "sha256-24b67ff0d1b0fe6d14a746833f5dd5b7d505ee2a4e9d0c1ef055e1079a5cf9f2"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MovieBlast.cs3",
@@ -1578,50 +1578,6 @@
         "iconUrl": "https://i.postimg.cc/FRwFFtyT/logo.png",
         "apiVersion": 1,
         "fileHash": "sha256-a8b79e4485117dffe7adce936b5b981a022858548ffff5272c859637d66df525"
-    },
-    {
-        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/TokusatsuUltimate.cs3",
-        "status": 1,
-        "version": 2,
-        "name": "TokusatsuUltimate",
-        "internalName": "TokusatsuUltimate",
-        "authors": [
-            "Phisher98,YoureMotherHelped-Love-Mom"
-        ],
-        "description": "Stream tokusatsu content including Kamen Rider, Super Sentai, Metal Heroes, and other Japanese special effect series with English subs",
-        "fileSize": 27393,
-        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
-        "language": "en",
-        "tvTypes": [
-            "TvSeries",
-            "Movie",
-            "Anime"
-        ],
-        "iconUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/TokusatsuUltimate/TokusatsuUltimateIcon.png",
-        "apiVersion": 1,
-        "fileHash": "sha256-a0278c38378c8c2097e343270f844c6ab3168294e832e3c99ad4a0519508e009"
-    },
-    {
-        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/TokuZilla.cs3",
-        "status": 1,
-        "version": 2,
-        "name": "TokuZilla",
-        "internalName": "TokuZilla",
-        "authors": [
-            "KaifTaufiq,Phisher98"
-        ],
-        "description": "Stream tokusatsu content including Power Ranger, Kamen Rider, Super Sentai, Metal Heroes, and other Japanese special effect series with English subs",
-        "fileSize": 18344,
-        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
-        "language": "en",
-        "tvTypes": [
-            "TvSeries",
-            "Movie",
-            "Anime"
-        ],
-        "iconUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/TokuZilla/icon.png",
-        "apiVersion": 1,
-        "fileHash": "sha256-f8ed0a62c8355a0c2a2ca4d54cd9f0226750b09517249e09971a1b88e0440288"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/ToonHub.cs3",
