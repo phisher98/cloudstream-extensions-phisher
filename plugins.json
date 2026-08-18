@@ -93,13 +93,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anikage.cs3",
         "status": 1,
-        "version": 4,
+        "version": 5,
         "name": "Anikage",
         "internalName": "Anikage",
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 33355,
+        "fileSize": 32272,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -109,10 +109,10 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?sz=64&domain=https://anikage.cc/",
         "apiVersion": 1,
-        "fileHash": "sha256-e2342c0a28e333bd7c475dc4ce76ef01578f9afaeaf3d1e9b49b2c25ccfd5d1c",
-        "jarFileSize": 185752,
+        "fileHash": "sha256-0cbfc8519878cf511280d4bac043db97893d5593434a5f182656ad2271ecc12f",
+        "jarFileSize": 126273,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anikage.jar",
-        "jarHash": "sha256-1faa616a4dfa13060bf3a16f98dc42a0791b9b1fb4c3030e4c75a2ba1327ef35"
+        "jarHash": "sha256-49b58d7286534cd90991c21eeb2e666b5fa09dbabfa457ce40abad535920260c"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniKoto.cs3",
@@ -582,14 +582,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/DoraBash.cs3",
         "status": 1,
-        "version": 9,
+        "version": 11,
         "name": "DoraBash",
         "internalName": "DoraBash",
         "authors": [
             "Phisher98"
         ],
         "description": "Doremon Show in Hindi",
-        "fileSize": 81114,
+        "fileSize": 81255,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -599,7 +599,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=dorabash.in&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-70bd6df74a3d2140311bcf2a116aa0b0ef53d6c2bda645ddbcadc52cf155ea3b"
+        "fileHash": "sha256-515dfaf49d551f52aa8f1b86883eff371ba50cb63a1f3f910603ba94283a4d2c"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/DudeFilms.cs3",
@@ -1453,7 +1453,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 1002794,
+        "fileSize": 1015525,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1466,7 +1466,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-f27198a590c8a1728db2ea7f6d99c9226feee10b6f3f7756d95fca7cc6850d3e"
+        "fileHash": "sha256-ea0b318366253dcf0e2f1d3365f42d0fa99a98b4c2c11aa93888971e7c9ab800"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
