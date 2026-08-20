@@ -386,7 +386,7 @@
             "Phisher98,Hexated"
         ],
         "description": "Include: Serienstream (Login Required under Extension Settings)",
-        "fileSize": 54008,
+        "fileSize": 54288,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "de",
         "tvTypes": [
@@ -396,7 +396,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=aniworld.to&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-3f4799b70474a2f0dd587dbc60e0a7d8a89a779abf7fc09b4bfee25cf56dcde8"
+        "fileHash": "sha256-38d4cd01623811166119f5dc4edb1861c71bccb9f6addb9dc94a7c78411f815f"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anizone.cs3",
@@ -470,14 +470,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Cinemacity.cs3",
         "status": 1,
-        "version": 23,
+        "version": 24,
         "name": "Cinemacity",
         "internalName": "Cinemacity",
         "authors": [
             "Phisher98"
         ],
         "description": "Watch Movies & TvSeries (Multi-Lang/Audio)",
-        "fileSize": 99088,
+        "fileSize": 99746,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -486,7 +486,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=cinemacity.cc&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-640503edf92127b5bc4c8c25a0e338a44273cf3c3445a4c0d987ef5567cbe213"
+        "fileHash": "sha256-bea9543a8949f6e395e47fd381ce2780c4069ee67d493dfc414bd7bf151ebb4c"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/CloudPlay.cs3",
@@ -888,14 +888,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kartoons.cs3",
         "status": 1,
-        "version": 1,
+        "version": 2,
         "name": "Kartoons",
         "internalName": "Kartoons",
         "authors": [
             "Phisher98"
         ],
         "description": "Kartoons (Cartoon & Animes)",
-        "fileSize": 81543,
+        "fileSize": 81683,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -905,7 +905,7 @@
         ],
         "iconUrl": "https://kartoons.me/logo.png",
         "apiVersion": 1,
-        "fileHash": "sha256-86ab2e870c12b4e092ab821b278703d4061bab4b277bb270a34be46c8d30106e"
+        "fileHash": "sha256-ac39954c2b51df86de2cc33fbd7c5b63a6099a2111adfbb1a7c7381e740d41ef"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.cs3",
@@ -1451,7 +1451,7 @@
             "Phisher98"
         ],
         "description": "ShowBox (Retrieve the cookie using Login with Google to properly utilize ShowBox.",
-        "fileSize": 115770,
+        "fileSize": 116163,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1462,7 +1462,7 @@
         ],
         "iconUrl": "https://miro.medium.com/v2/1*DyU8bmnyyEiJbFROEXO2VA.png",
         "apiVersion": 1,
-        "fileHash": "sha256-7d0e18ff933af79440d27bbd409e8b542bed77573216686701ae414c511efdd6"
+        "fileHash": "sha256-c791efdbfbcd2eb03a998315e5763660b2acfda3686a0e905a092210d8e74d1f"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StreamPlay.cs3",
@@ -1475,7 +1475,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 1015525,
+        "fileSize": 1015708,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1488,7 +1488,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-ea0b318366253dcf0e2f1d3365f42d0fa99a98b4c2c11aa93888971e7c9ab800"
+        "fileHash": "sha256-2161323d6b0728424c2f840a86f6a173fa96f211c2f1e31be750370f19f3eae8"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
@@ -1543,7 +1543,7 @@
             "Phisher98"
         ],
         "description": "SuperStream (Retrieve the cookie using Login with Google to properly utilize SuperStream.",
-        "fileSize": 129666,
+        "fileSize": 129897,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1556,7 +1556,7 @@
         ],
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.showbox.media/&size=256",
         "apiVersion": 1,
-        "fileHash": "sha256-d3aae88962a9afb27d3dddc9c0804784d54631990d7177cec2ca0e43ffa3160a"
+        "fileHash": "sha256-b1a26ba759658a5f240c394cfc539a224592a816e48cb0766f0e7937fb28a6c8"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Tamilblasters.cs3",
