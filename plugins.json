@@ -1767,14 +1767,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/XDMovies.cs3",
         "status": 1,
-        "version": 9,
+        "version": 10,
         "name": "XDMovies",
         "internalName": "XDMovies",
         "authors": [
             "Phisher98"
         ],
         "description": "Watch Latest Movies",
-        "fileSize": 111361,
+        "fileSize": 113273,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1787,7 +1787,7 @@
         ],
         "iconUrl": "https://top.xdmovies.wtf/assets/logo1.png",
         "apiVersion": 1,
-        "fileHash": "sha256-e509978bda732b6c737409c6272294565136373eaaa27c4889e45263d3ab7207"
+        "fileHash": "sha256-d0f1eb328ed17e5695abf9089a34b6cbe9af7e7d2365800aea87a6e4661baa85"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/YTS.cs3",
