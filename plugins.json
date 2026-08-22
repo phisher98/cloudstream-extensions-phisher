@@ -1261,14 +1261,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OneTouchTV.cs3",
         "status": 1,
-        "version": 2,
+        "version": 3,
         "name": "OneTouchTV",
         "internalName": "OneTouchTV",
         "authors": [
             "Phisher98"
         ],
         "description": "Asian Dramas",
-        "fileSize": 43162,
+        "fileSize": 62863,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1277,10 +1277,10 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=onetouchtv.xyz/&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-9fc6fc7125ca170c5aa38c7eba12090a5436c86a4826691db5405d717b7b02d0",
-        "jarFileSize": 204201,
+        "fileHash": "sha256-1ae90439081467764ed3a5eab0a37ecea8eb8dcc0b43aef68ba5ab1e723ae82c",
+        "jarFileSize": 294295,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OneTouchTV.jar",
-        "jarHash": "sha256-b771abf4df4daa3091e4d6ccfc79200f3ada886cbe37dca8e19a092143827f5a"
+        "jarHash": "sha256-2932189ada9eea6b6fe3ca977ddb66cd21d1e2810c86f6eda8cee7c27f6c9220"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Pencurimovie.cs3",
