@@ -1467,7 +1467,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StreamPlay.cs3",
         "status": 1,
-        "version": 660,
+        "version": 661,
         "name": "StreamPlay",
         "internalName": "StreamPlay",
         "authors": [
@@ -1475,7 +1475,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 1018035,
+        "fileSize": 1020168,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1488,7 +1488,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-c6bd500c88fed4060de56ecaa7db6c75a77f3107d81a26190dbe933e087eb8da"
+        "fileHash": "sha256-98f5bfae9c689d425b1e59f88cc841d30bb9ee3d2a2a9cb65c564bdb2c7008fd"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
@@ -1726,14 +1726,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/UHDmoviesProvider.cs3",
         "status": 1,
-        "version": 37,
+        "version": 38,
         "name": "UHDmoviesProvider",
         "internalName": "UHDmoviesProvider",
         "authors": [
             "Phisher98"
         ],
         "description": "Indian Multi-language 4K Provider",
-        "fileSize": 51277,
+        "fileSize": 52055,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1742,7 +1742,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/UHDmoviesProvider/icon.png",
         "apiVersion": 1,
-        "fileHash": "sha256-5decc22388ad63b50030aac8e312a58fcc02028e87b3ddef6cc6b7ff85b03904"
+        "fileHash": "sha256-c61672a5b588621d090a625b1f48e0216f28cc3c322759b5f6e59ac0c957b20a"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Ultima.cs3",
