@@ -767,14 +767,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.cs3",
         "status": 1,
-        "version": 2,
+        "version": 3,
         "name": "Hdmovie2",
         "internalName": "Hdmovie2",
         "authors": [
             "Phisher98"
         ],
         "description": "Hdmovie2",
-        "fileSize": 42525,
+        "fileSize": 42972,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -783,10 +783,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/hdmovie2.png",
         "apiVersion": 1,
-        "fileHash": "sha256-349e48475c5e0530d86b17ba4451d45d5638bac5bee2a41b847580d2d27fc976",
-        "jarFileSize": 179320,
+        "fileHash": "sha256-ffafeebb74fdbd9e4412dc02d9f158ff628862994bbf98eddaba1d1fa55a82ae",
+        "jarFileSize": 180975,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.jar",
-        "jarHash": "sha256-2be6c622ba37adb24314d401e5dc9a62200f87eae8166d84d369324689e6b60e"
+        "jarHash": "sha256-06f62ac447fb3c0facb8e4ecccaa9e0adbbcfc215f75e2b692afbcf936ff3c5e"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hindmoviez.cs3",
@@ -1497,7 +1497,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 1020344,
+        "fileSize": 1020707,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1510,7 +1510,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-6db867e6724a462d26ba33f515cac22f7c695338a7083db7a624a733a55dca6d"
+        "fileHash": "sha256-2862fae1c1ad59284965b8b975d1e488c7d52f52cb1762344de5d66d25583fce"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
