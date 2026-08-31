@@ -1307,26 +1307,26 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Pencurimovie.cs3",
         "status": 1,
-        "version": 5,
+        "version": 6,
         "name": "Pencurimovie",
         "internalName": "Pencurimovie",
         "authors": [
             "Phisher98"
         ],
         "description": "Pencurimovie ",
-        "fileSize": 13757,
+        "fileSize": 13755,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "id",
         "tvTypes": [
             "Movie",
             "TvSeries"
         ],
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ww03.pencurimovie.bond&size=%size%",
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ww21.pencurimovie.sbs&size=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-498530d105363370af597871998336801770dfd6cd3f513382754a5342be648c",
-        "jarFileSize": 53324,
+        "fileHash": "sha256-ce94a7d34b4520fb36e0fdace9014408990b8b0c97a87afdc23241fc0b2bc1f4",
+        "jarFileSize": 53313,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Pencurimovie.jar",
-        "jarHash": "sha256-cc160de42b72e6587c2da8885bd8fd9cd56dd1d34689ea6ab9694cddc718b745"
+        "jarHash": "sha256-7ff0d13104223e31554d3d4b3a2885e02d983b6d532cf6eb4b636914e00cb78a"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Pinoymoviepedia.cs3",
