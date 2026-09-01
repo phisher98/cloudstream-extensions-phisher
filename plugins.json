@@ -358,7 +358,7 @@
             "Phisher98"
         ],
         "description": "Anime and Movies",
-        "fileSize": 38689,
+        "fileSize": 42827,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -368,7 +368,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=animexin.dev&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-f0cf0124487c6e50367fd36cc3fd5e3f8078c40bb53f5731d8a06ee11c7f2392"
+        "fileHash": "sha256-368b952b05b60756fd1176523027398d8caa050921c58a5e4b5dcd59b24833b1"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anineko.cs3",
