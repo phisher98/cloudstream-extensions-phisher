@@ -351,14 +351,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animexin.cs3",
         "status": 1,
-        "version": 11,
+        "version": 13,
         "name": "Animexin",
         "internalName": "Animexin",
         "authors": [
             "Phisher98"
         ],
         "description": "Anime and Movies",
-        "fileSize": 14993,
+        "fileSize": 38689,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -368,10 +368,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=animexin.dev&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-89ce4d0cd6bb2e31e73b54bcb879fca0746418c50f708e47b6f1de0dc60ffe63",
-        "jarFileSize": 60540,
-        "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animexin.jar",
-        "jarHash": "sha256-fbfb17c34938bc002c1cf3aabefca78ca65ac1a095288ae6a93f37d5b6db8b99"
+        "fileHash": "sha256-f0cf0124487c6e50367fd36cc3fd5e3f8078c40bb53f5731d8a06ee11c7f2392"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anineko.cs3",
@@ -423,14 +420,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anizone.cs3",
         "status": 1,
-        "version": 4,
+        "version": 5,
         "name": "Anizone",
         "internalName": "Anizone",
         "authors": [
             "ycngmn"
         ],
         "description": "Anizone.to streams latest anime content in multiple language.",
-        "fileSize": 27568,
+        "fileSize": 25850,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -438,7 +435,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/ycngmn/CuxPlug/refs/heads/main/icons/anizone.png",
         "apiVersion": 1,
-        "fileHash": "sha256-3c5303d8f3708fe72b2447d44e523ac12e9ad312e6d384b40b3b64ddc81508ec"
+        "fileHash": "sha256-4f8705c8acdaf5b7975327020c70865512778109ce8087998df1bba83d482fe9"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/BanglaPlex.cs3",
@@ -932,13 +929,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.cs3",
         "status": 1,
-        "version": 24,
+        "version": 25,
         "name": "Kickassanime",
         "internalName": "Kickassanime",
         "authors": [
             "Phisher98,Hexated"
         ],
-        "fileSize": 56163,
+        "fileSize": 59945,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -948,10 +945,10 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/KAA.png",
         "apiVersion": 1,
-        "fileHash": "sha256-94acac0d8673f6a4e8df8a1c49effaf98b58bcdeb00c52c2e07fc6ad0f206c49",
-        "jarFileSize": 262968,
+        "fileHash": "sha256-e4c484041f02fd723a8424454c79ea4fb9710de080f87017e2866ecfca50b439",
+        "jarFileSize": 275206,
         "jarUrl": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.jar",
-        "jarHash": "sha256-a3a809a77775c37154df91b234c2b726f27d40af80395c9a3414402ae985dcee"
+        "jarHash": "sha256-aa3ff2130f57ee2a625eea0699210564807e8eebb1aa8bce37e65421cc59df29"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/KisskhProvider.cs3",
