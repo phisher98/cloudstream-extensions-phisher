@@ -743,13 +743,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/HDhub4u.cs3",
         "status": 1,
-        "version": 51,
+        "version": 52,
         "name": "HDhub4u",
         "internalName": "HDhub4u",
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 79824,
+        "fileSize": 79859,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -759,7 +759,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/HDHUB.png",
         "apiVersion": 1,
-        "fileHash": "sha256-0af4ef03c2b6cf25f4d803987b08becaca18cdc1118fad2948306cdee033d546"
+        "fileHash": "sha256-50d0828d50fb33aece00ce9224ca81a29b21bbbeefc0202c8f8fba2020ac9824"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.cs3",
