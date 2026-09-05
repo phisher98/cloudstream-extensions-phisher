@@ -304,14 +304,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AnimePahe.cs3",
         "status": 1,
-        "version": 34,
+        "version": 35,
         "name": "AnimePahe",
         "internalName": "AnimePahe",
         "authors": [
             "Cloudburst,Lorem Ipsum,Phisher98"
         ],
         "description": "Animes (SUB/DUB)",
-        "fileSize": 80124,
+        "fileSize": 80863,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -321,7 +321,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png",
         "apiVersion": 1,
-        "fileHash": "sha256-296fa807b5ecc16e6373e12de9d0eacd47dd6582e0ba3cfa826e30d1a0d373fe"
+        "fileHash": "sha256-f180f65370d7192c3753fea64b02df7a3a079d99a2998acda0eb115ce4ac8f66"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animesalt.cs3",
@@ -857,14 +857,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/IStreamFlare.cs3",
         "status": 1,
-        "version": 2,
+        "version": 3,
         "name": "IStreamFlare",
         "internalName": "IStreamFlare",
         "authors": [
             "Phisher98"
         ],
         "description": "Movies/Series/Anime",
-        "fileSize": 48783,
+        "fileSize": 50212,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -877,7 +877,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/streamflare.png",
         "apiVersion": 1,
-        "fileHash": "sha256-6a430ca6345604ccdce9a140e724f427f2618f6d3be11aff82d97fa7e0b44812"
+        "fileHash": "sha256-7a1d85e93eb10d69cc3d7434874cac64890f0fedef5b6d04cadaadebfee5e702"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Jellyfin.cs3",
