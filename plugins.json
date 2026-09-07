@@ -462,7 +462,7 @@
             "Phisher98"
         ],
         "description": "English anime and donghua from chikianimation.com",
-        "fileSize": 86620,
+        "fileSize": 77397,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "zh",
         "tvTypes": [
@@ -471,7 +471,7 @@
         ],
         "iconUrl": "https://chikianimation.com/wp-content/uploads/2026/03/logo.png",
         "apiVersion": 1,
-        "fileHash": "sha256-ed0937979b119278bafa08bec963a56a707bba16779f80d38108efc4e8e21000"
+        "fileHash": "sha256-f71318c2e3fe8f07abb7421cf2b85767545c60edbfe389668323e4788ddc296d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Cinefreak.cs3",
