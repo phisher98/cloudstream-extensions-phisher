@@ -87,13 +87,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anikage.cs3",
         "status": 1,
-        "version": 7,
+        "version": 8,
         "name": "Anikage",
         "internalName": "Anikage",
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 66514,
+        "fileSize": 66396,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -103,7 +103,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?sz=64&domain=https://anikage.cc/",
         "apiVersion": 1,
-        "fileHash": "sha256-e5c30be302a8a276156428d2b6e3ef9cf6742290b96655659864e62e31756212"
+        "fileHash": "sha256-0850e18eb338076d2d143e65da1cc93b621801349204761b4b3197911fe7db81"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniKoto.cs3",
