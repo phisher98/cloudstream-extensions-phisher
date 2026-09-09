@@ -1634,14 +1634,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/TorraStream.cs3",
         "status": 1,
-        "version": 94,
+        "version": 95,
         "name": "TorraStream",
         "internalName": "TorraStream",
         "authors": [
             "Phisher98"
         ],
         "description": "#1 Best Extension \u2013 MultiAPI-Based with 4K Torrent Support (Debian) Use Extension Settings",
-        "fileSize": 225955,
+        "fileSize": 226417,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1653,7 +1653,7 @@
         ],
         "iconUrl": "https://torrentio.strem.fun/images/logo_v1.png",
         "apiVersion": 1,
-        "fileHash": "sha256-6297f918805e276351da8446ff1dc0e01307691645f9d2315df0aa8799206789"
+        "fileHash": "sha256-1d4be2aefb8492c1dd51b38c3f277a3db51265498e3dfac787f37e1e887e6b50"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/UHDmoviesProvider.cs3",
