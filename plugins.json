@@ -368,14 +368,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniVortex.cs3",
         "status": 1,
-        "version": 7,
+        "version": 9,
         "name": "AniVortex",
         "internalName": "AniVortex",
         "authors": [
             "Phisher98"
         ],
         "description": "AniVortex \u2014 Anime, movies & TV series streaming",
-        "fileSize": 135549,
+        "fileSize": 139517,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -387,7 +387,7 @@
         ],
         "iconUrl": "https://anivortex.in/images/anivortex_logo_transparent.webp",
         "apiVersion": 1,
-        "fileHash": "sha256-1484b668770e07a479bed742e329c595fbfb1ab42cebb349fda01530ed99b49f"
+        "fileHash": "sha256-ecc803b43feaafa6458f1c6697647ff1653750d60a7fcc09f73791e95c8933de"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Aniworld.cs3",
