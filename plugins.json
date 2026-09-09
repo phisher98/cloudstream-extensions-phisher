@@ -970,13 +970,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/LayarKacaProvider.cs3",
         "status": 1,
-        "version": 9,
+        "version": 10,
         "name": "LayarKacaProvider",
         "internalName": "LayarKacaProvider",
         "authors": [
             "Hexated,Phisher98"
         ],
-        "fileSize": 57322,
+        "fileSize": 88671,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "id",
         "tvTypes": [
@@ -984,9 +984,9 @@
             "TvSeries",
             "Movie"
         ],
-        "iconUrl": "https://www.google.com/s2/favicons?domain=tv7.lk21.am.in&sz=%size%",
+        "iconUrl": "https://www.google.com/s2/favicons?domain=d21.team&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-8e7570be9d9230d19775718179dd3d816225394532ef95cd0d3a4c57193b2606"
+        "fileHash": "sha256-1b1099cde8594ccb313a2037e76d8f1e7715ceafd3d05859150e96044e3fe3fd"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MassTamilanProvider.cs3",
