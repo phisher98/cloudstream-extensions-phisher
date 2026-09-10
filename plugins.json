@@ -1367,6 +1367,27 @@
         "fileHash": "sha256-03c98c58901a94fc80d82e7996e50e27030c080fd8d3c0e9499770e391326ecb"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Reanime.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "Reanime",
+        "internalName": "Reanime",
+        "authors": [
+            "Phisher98"
+        ],
+        "fileSize": 112550,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "en",
+        "tvTypes": [
+            "AnimeMovie",
+            "Anime",
+            "OVA"
+        ],
+        "iconUrl": "https://reanime.to/favicon.ico",
+        "apiVersion": 1,
+        "fileHash": "sha256-12bf12420dddf45a1a9e75e6961c3341f93e688c58c15e07a395f110feb45132"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/RingZ.cs3",
         "status": 1,
         "version": 12,
@@ -1422,7 +1443,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 1124426,
+        "fileSize": 1129481,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1435,7 +1456,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-b4e772013274ba5224600c8a60b7f7c8e96091e998b5eb0f653fbb491d02d0ca"
+        "fileHash": "sha256-da1b87c13278b6ba606cb8d2c503bb159481f8b7cb092e37191e179b1773d811"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
