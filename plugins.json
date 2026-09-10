@@ -368,7 +368,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniVortex.cs3",
         "status": 1,
-        "version": 14,
+        "version": 10,
         "name": "AniVortex",
         "internalName": "AniVortex",
         "authors": [
@@ -387,7 +387,7 @@
         ],
         "iconUrl": "https://anivortex.in/images/anivortex_logo_transparent.webp",
         "apiVersion": 1,
-        "fileHash": "sha256-6af6d07aede4558cec0f4a991e164684e3c42f6addd3eabdbe4ab87dd964bc50"
+        "fileHash": "sha256-72ed6a08f6fd28f742875be0db8a88fe97b4c9db7f1761f17064e8bb4e789f31"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Aniworld.cs3",
