@@ -1375,7 +1375,7 @@
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 112550,
+        "fileSize": 112663,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1385,7 +1385,7 @@
         ],
         "iconUrl": "https://reanime.to/favicon.ico",
         "apiVersion": 1,
-        "fileHash": "sha256-12bf12420dddf45a1a9e75e6961c3341f93e688c58c15e07a395f110feb45132"
+        "fileHash": "sha256-4419c2abd32731cb1752de5a96583631a9b2ef0b553d98b191fa0fd1922dda7b"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/RingZ.cs3",
