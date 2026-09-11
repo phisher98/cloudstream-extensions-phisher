@@ -346,14 +346,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anineko.cs3",
         "status": 1,
-        "version": 5,
+        "version": 6,
         "name": "Anineko",
         "internalName": "Anineko",
         "authors": [
             "Phisher98"
         ],
         "description": "Anime from Anineko",
-        "fileSize": 70375,
+        "fileSize": 75982,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -363,7 +363,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Anineko.png",
         "apiVersion": 1,
-        "fileHash": "sha256-997e314aa60d58b35dacd5361a7c7f87ba6056dee2102e6cf2da9a2194259320"
+        "fileHash": "sha256-bf9c4267ba9b8dfc11a381c134f6569c6d1a62fe6c3d9c07bc4bc93cdb016b6b"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniVortex.cs3",
