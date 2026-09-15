@@ -771,23 +771,23 @@
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/HiAnime.cs3",
-        "status": 0,
-        "version": 31,
+        "status": 1,
+        "version": 1,
         "name": "HiAnime",
         "internalName": "HiAnime",
         "authors": [
-            "Stormunblessed, KillerDogeEmpire,RowdyRushya,Phisher98"
+            "Phisher98"
         ],
-        "fileSize": 89607,
+        "fileSize": 89606,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
             "Anime",
             "OVA"
         ],
-        "iconUrl": "https://www.google.com/s2/favicons?domain=hianime.to&sz=%size%",
+        "iconUrl": "https://www.google.com/s2/favicons?domain=hianime.at&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-d4901428678d3bea1df2943e842109efbf1ea4a7dd5f3dd316adf99134b715ce"
+        "fileHash": "sha256-ec403818a1cf78e9c5468d48a68e462825deac811b40c3dd58c225ac6b17b8ce"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hindmoviez.cs3",
@@ -1139,14 +1139,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MultiMoviesProvider.cs3",
         "status": 1,
-        "version": 53,
+        "version": 54,
         "name": "MultiMoviesProvider",
         "internalName": "MultiMoviesProvider",
         "authors": [
             "Phisher98"
         ],
         "description": "Indian Multi-language HD Provider",
-        "fileSize": 82027,
+        "fileSize": 138919,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1156,7 +1156,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/MultiMoviesProvider/icon.png",
         "apiVersion": 1,
-        "fileHash": "sha256-b49f6803c4dbf874f980a1d8c518e0cd67c2deae9216e4e580ef82b08bab0ae7"
+        "fileHash": "sha256-cfeb82d8c5b88c62dd7c82e5d08599d256d25cf1e3049ea20b4215be4ff1bc06"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Netcinez.cs3",
