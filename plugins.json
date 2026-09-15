@@ -1180,6 +1180,27 @@
         "fileHash": "sha256-c7d54c81706843cf94db693bad532771040d42b29492bb39f320a895c49d3902"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/ObejrzyjTo.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "ObejrzyjTo",
+        "internalName": "ObejrzyjTo",
+        "authors": [
+            "Phisher98"
+        ],
+        "description": "Obejrzyj.to - Polski serwis z darmowymi filmami i serialami online",
+        "fileSize": 125129,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "pl",
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "iconUrl": "https://www.obejrzyj.to/favicon/icon-512x512.png",
+        "apiVersion": 1,
+        "fileHash": "sha256-5a309794469b24dc510404a52f537c234af91b5a3c97b7be5d776b7b84d9ff3d"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/OHLI24.cs3",
         "status": 1,
         "version": 7,
