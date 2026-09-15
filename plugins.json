@@ -44,13 +44,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anichi.cs3",
         "status": 1,
-        "version": 26,
+        "version": 27,
         "name": "Anichi",
         "internalName": "Anichi",
         "authors": [
             "Hexated,Phisher98"
         ],
-        "fileSize": 171659,
+        "description": "AllManga/Mkissa Source",
+        "fileSize": 217328,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -60,7 +61,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Allanime.png",
         "apiVersion": 1,
-        "fileHash": "sha256-3350b0040114be3edff2de3154dc91c1e8a53a0f8415e53a8aa44035668980ce"
+        "fileHash": "sha256-311e561433c93fbf7b8a462ddfe5958b48a68e1ba73a54a838d4c5bf06f8f786"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniDb.cs3",
