@@ -340,7 +340,7 @@
             "Anime",
             "Cartoon"
         ],
-        "iconUrl": "https://animexin.dev/wp-content/uploads/2026/01/New-Logo-e1768365053967.png",
+        "iconUrl": "https://a.favicon.im/animexin.dev?larger=true",
         "apiVersion": 1,
         "fileHash": "sha256-b49173260c50f75cbb82258fc706958fe615a7ad723c2a76fa536cb9c69a363f"
     },
@@ -384,7 +384,7 @@
             "AnimeMovie",
             "OVA"
         ],
-        "iconUrl": "https://www.google.com/s2/favicons?domain=anisnatch.to&sz=%size%",
+        "iconUrl": "https://a.favicon.im/anisnatch.to?larger=true",
         "apiVersion": 1,
         "fileHash": "sha256-aa9795db9c58e436c5b658ef5dbdf93817008618c37ca4ea162996ecb2142e17"
     },
@@ -724,7 +724,7 @@
         "tvTypes": [
             "Others"
         ],
-        "iconUrl": "https://raw.githubusercontent.com/google/material-design-icons/master/png/av/library_books/png48/library_books_48dp.png",
+        "iconUrl": "https://a.favicon.im/goldenaudiobooks.com?larger=true",
         "apiVersion": 1,
         "fileHash": "sha256-78655d3f601840b916a7b165db87278cf3a74f0c58dcbe14cedf548a3a1dd738"
     },
