@@ -1352,14 +1352,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Pmsm.cs3",
         "status": 1,
-        "version": 6,
+        "version": 7,
         "name": "Pmsm",
         "internalName": "Pmsm",
         "authors": [
             "Phisher98,Duro92"
         ],
         "description": "PMSM (Pencuri Movie Sub Malay)",
-        "fileSize": 64181,
+        "fileSize": 64188,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "id",
         "tvTypes": [
@@ -1368,7 +1368,7 @@
         ],
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ww192.pencurimoviesubmalay.motorcycles&size=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-9bec6a20510fe72556c8a296b1a89f2076394b32a92d9283b16b14724b927f7b"
+        "fileHash": "sha256-17560eb374da85f4fb07016da46993dca5d46cb16c3ce9501e7f1a2e62e56b73"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/PublicSportsIPTV.cs3",
