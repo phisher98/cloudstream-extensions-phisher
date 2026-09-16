@@ -367,6 +367,28 @@
         "fileHash": "sha256-f841e09f8d60ebbcbcbc32e9d921fd8591007cd8242704efea37ca909b81bfea"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniSnatch.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "AniSnatch",
+        "internalName": "AniSnatch",
+        "authors": [
+            "Phisher98"
+        ],
+        "description": "AniSnatch - Watch Anime Online Free",
+        "fileSize": 127657,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "en",
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie",
+            "OVA"
+        ],
+        "iconUrl": "https://www.google.com/s2/favicons?domain=anisnatch.to&sz=%size%",
+        "apiVersion": 1,
+        "fileHash": "sha256-9ac51cf34c0874ca85c5bf3e20b325ed6be2eda65c0f7450c92e0233dcddee6c"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniVortex.cs3",
         "status": 1,
         "version": 10,
