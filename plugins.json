@@ -1765,14 +1765,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Ultima.cs3",
         "status": 2,
-        "version": 64,
+        "version": 65,
         "name": "Ultima",
         "internalName": "Ultima",
         "authors": [
             "RowdyRushya,Phisher98"
         ],
         "description": "The ultimate All-in-One home screen to access all of your extensions at one place (You need to select/deselect sections in Ultima's settings to load other extensions on home screen)",
-        "fileSize": 227844,
+        "fileSize": 226507,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1780,19 +1780,19 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Ultima.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-69d415b09b61b31cf41cd3cf8bf937f046092a6e7cc1a0cec1b09d2dcc2acc5b"
+        "fileHash": "sha256-08ccb0a78c21dd2244b83208caa75198e85d8650f6a645c1cbb158fecd642907"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/XDMovies.cs3",
         "status": 1,
-        "version": 18,
+        "version": 26,
         "name": "XDMovies",
         "internalName": "XDMovies",
         "authors": [
             "Phisher98"
         ],
         "description": "Watch Latest Movies",
-        "fileSize": 176450,
+        "fileSize": 176665,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1805,7 +1805,7 @@
         ],
         "iconUrl": "https://top.xdmovies.wtf/assets/logo1.png",
         "apiVersion": 1,
-        "fileHash": "sha256-373cdb289eed013dfd7e88dbe09d87b73c2d6db877a153b99d28684f42f3850f"
+        "fileHash": "sha256-170104ba2fc4395eda35ca261114389e9a91db13c78b7cdc5da38e5873987ffc"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/YTS.cs3",
