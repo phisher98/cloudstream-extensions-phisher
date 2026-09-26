@@ -584,14 +584,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Desicinemas.cs3",
         "status": 1,
-        "version": 16,
+        "version": 17,
         "name": "Desicinemas",
         "internalName": "Desicinemas",
         "authors": [
             "Phisher98"
         ],
         "description": "Contains BollyZone",
-        "fileSize": 74192,
+        "fileSize": 76850,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -600,7 +600,7 @@
         ],
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://desicinemas.to&size=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-cfbf62242cd60274639f5fa29b03789977b7f633d7f40bd93807613f3f4980fa"
+        "fileHash": "sha256-e91c711c9ec47a908931603b68cb95c8f2e891fb30b7993056e65f99d23045ae"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Donghuastream.cs3",
