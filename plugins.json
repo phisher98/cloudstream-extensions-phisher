@@ -1594,14 +1594,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Tamilblasters.cs3",
         "status": 1,
-        "version": 11,
+        "version": 12,
         "name": "Tamilblasters",
         "internalName": "Tamilblasters",
         "authors": [
             "rockhero1234,phisher98"
         ],
         "description": "Movies & Series",
-        "fileSize": 52314,
+        "fileSize": 64348,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "ta",
         "tvTypes": [
@@ -1610,7 +1610,7 @@
         ],
         "iconUrl": "https://i.postimg.cc/FRwFFtyT/logo.png",
         "apiVersion": 1,
-        "fileHash": "sha256-7eb2b81974bcee3a82ec5580fadb3b99f230de99dc9555d724ba038017f9ecc3"
+        "fileHash": "sha256-3ca2ec27d7a548e7bd42781351fb3d3db1a11778b360300369198725ba00a37e"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/ToonHub.cs3",
