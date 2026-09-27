@@ -437,14 +437,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anizone.cs3",
         "status": 1,
-        "version": 9,
+        "version": 10,
         "name": "Anizone",
         "internalName": "Anizone",
         "authors": [
             "ycngmn"
         ],
         "description": "Anizone.to streams latest anime content in multiple language.",
-        "fileSize": 65893,
+        "fileSize": 65917,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -452,7 +452,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/anizone.png",
         "apiVersion": 1,
-        "fileHash": "sha256-9a9a819c188d3a4e86e60c3e80402f1ab2e83f54b6b68d3891154dfae19042a1"
+        "fileHash": "sha256-1b26e83137951351ab9a65d26c75c8ac3a755b770260ff17cfd720ffa126003f"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/BanglaPlex.cs3",
@@ -584,14 +584,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Desicinemas.cs3",
         "status": 1,
-        "version": 17,
+        "version": 18,
         "name": "Desicinemas",
         "internalName": "Desicinemas",
         "authors": [
             "Phisher98"
         ],
         "description": "Contains BollyZone",
-        "fileSize": 76850,
+        "fileSize": 76872,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -600,7 +600,7 @@
         ],
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://desicinemas.to&size=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-e91c711c9ec47a908931603b68cb95c8f2e891fb30b7993056e65f99d23045ae"
+        "fileHash": "sha256-1a5548f0d8119d6afecfbf81396675ae41b81e9456e80ee2d42b079ab50d6cba"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Donghuastream.cs3",
