@@ -695,7 +695,7 @@
             "Phisher98"
         ],
         "description": "4K Movies Extension by HDHUB4U",
-        "fileSize": 105665,
+        "fileSize": 106038,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -704,7 +704,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/4KHDHUB-Bright-Logo.png",
         "apiVersion": 1,
-        "fileHash": "sha256-373cb3547337882551a01eb494555dcebf56a67d144fe8e0c8a16a43fc946007"
+        "fileHash": "sha256-08519070951641e7d0685d74a4beb4462515fa2de8c8a4d51108d43e178ed588"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/GoldenAudiobooks.cs3",
@@ -757,7 +757,7 @@
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 117944,
+        "fileSize": 118328,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -767,7 +767,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/HDHUB.png",
         "apiVersion": 1,
-        "fileHash": "sha256-920dd54c95a00503c275a1b80deb5fdc73969cf10ca2f839dcbe62e36afd755c"
+        "fileHash": "sha256-2c36acdd04d92ec8e7072c9225fea52475e365b76842d4522c8a1e4ea5299f19"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.cs3",
@@ -1478,7 +1478,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StreamPlay.cs3",
         "status": 1,
-        "version": 681,
+        "version": 682,
         "name": "StreamPlay",
         "internalName": "StreamPlay",
         "authors": [
@@ -1486,7 +1486,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 1763849,
+        "fileSize": 1810859,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1499,7 +1499,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-97b385e05aa6d074a505f7b3712b63129547af1111553bee012da182995013a9"
+        "fileHash": "sha256-14ad69c3e8e292c55cf20fd4744ff3f08272d6436c197f658dcfc419421dcd3b"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
