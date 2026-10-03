@@ -750,14 +750,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Hdmovie2.cs3",
         "status": 1,
-        "version": 5,
+        "version": 6,
         "name": "Hdmovie2",
         "internalName": "Hdmovie2",
         "authors": [
             "Phisher98"
         ],
         "description": "Hdmovie2",
-        "fileSize": 78605,
+        "fileSize": 80829,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -766,7 +766,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/hdmovie2.png",
         "apiVersion": 1,
-        "fileHash": "sha256-57f73c026a6d2352ec696cea6eaecd2a8c71ee03fe11f00a9ab04660c6e73beb"
+        "fileHash": "sha256-7a743282ec27b67f072acd7b30de31a8eff1788a27cee23a868c3910a0ca9ce8"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/HiAnime.cs3",
@@ -1390,7 +1390,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Reanime.cs3",
         "status": 1,
-        "version": 2,
+        "version": 3,
         "name": "Reanime",
         "internalName": "Reanime",
         "authors": [
@@ -1406,7 +1406,7 @@
         ],
         "iconUrl": "https://reanime.to/favicon.ico",
         "apiVersion": 1,
-        "fileHash": "sha256-d131b111e596f5214850ee8c3bf402e6dfcf22998c80a1fb60c0267e61657ae4"
+        "fileHash": "sha256-b98b547555906d832c3693d63b94c1c8000bfd16c7e8714f7945b683209b4383"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/RingZ.cs3",
