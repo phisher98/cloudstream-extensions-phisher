@@ -1721,14 +1721,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Ultima.cs3",
         "status": 2,
-        "version": 66,
+        "version": 67,
         "name": "Ultima",
         "internalName": "Ultima",
         "authors": [
             "RowdyRushya,Phisher98"
         ],
         "description": "The ultimate All-in-One home screen to access all of your extensions at one place (You need to select/deselect sections in Ultima's settings to load other extensions on home screen)",
-        "fileSize": 243369,
+        "fileSize": 338701,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1736,7 +1736,27 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Ultima.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-10cbe6a0e11960cc1370cb5b5cab40d137f7671075f694c5e1ee35208dbf6bc5"
+        "fileHash": "sha256-fcd9e3e6f05690a0c57159dbffea4cb390cccaaa5b39fade8cc2b799ef517227"
+    },
+    {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/WatchParty.cs3",
+        "status": 1,
+        "version": 1,
+        "name": "WatchParty",
+        "internalName": "WatchParty",
+        "authors": [
+            "Phisher98"
+        ],
+        "description": "Synchronized Watch Party: Watch movies and series together with real-time playback sync, persistent chat window, and host moderation.",
+        "fileSize": 129303,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "en",
+        "tvTypes": [
+            "All"
+        ],
+        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/w1.jpg",
+        "apiVersion": 1,
+        "fileHash": "sha256-36193ff92d81c55e314ab67d783186191146dbf8003ce2b4131636043783c2c8"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/XDMovies.cs3",
