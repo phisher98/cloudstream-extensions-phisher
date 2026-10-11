@@ -15,6 +15,8 @@ If you find this project helpful, consider supporting its development!
 ### 🔹 Phisher Cloudstream Plugin Server
 [![Discord](https://invidget.switchblade.xyz/3VmSzGeCTz)](https://discord.com/invite/3VmSzGeCTz)
 
+### 🔸 Cloudstream Plugin Server
+[![Discord](https://invidget.switchblade.xyz/JrGk2MjX7S)](https://discord.com/invite/JrGk2MjX7S)
 
 ---
 
@@ -36,7 +38,17 @@ Want to sync your devices using **Ultima’s Cross Device Watch Sync**?
 
 📘 [View YouTube guide →](https://cloudstream.miraheze.org/wiki/Ultima)
 
-This guide will show you how to use a **private GitHub project** and a **personal access token** to sync playback history across devices.
+This guide will show you how to use a **Firebase Realtime Database** to sync playback history and settings across devices.
+
+---
+
+## 🎉 Watch Party (Watch Together)
+
+Want to watch movies and series in real time with friends?
+
+📘 **Watch Party Setup & User Guide**  
+Step-by-step guide on creating/joining rooms, sharing 1-click invite links, in-player live chat, quick emoji reactions, and host moderation tools in the **WatchParty** & **Ultima** extensions.  
+[Open guide →](docs/WATCH_PARTY_GUIDE.md)
 
 ---
 

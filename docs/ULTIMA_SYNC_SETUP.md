@@ -73,6 +73,23 @@ Now that your database is ready, configure the sync settings inside the **Ultima
    - Tap **Pull changes from the cloud** first. This fetches your existing settings from the database so they are not overwritten by the new device's empty/default settings.
    - Once the data is successfully restored, you can safely enable **Backup Device** (if you want this device to upload changes in the future) and tap **Sync Now (Force Sync)** to keep everything in sync!
 
+
+---
+
+## 🎉 Bonus: Ultima Watch Party (Watch Together)
+
+Ultima also features a built-in **Watch Party** engine that allows you and your friends to watch movies, anime, and TV series in real-time synchronization.
+
+- **Shared Firebase Database**: The Watch Party engine can use the **exact same Firebase Realtime Database URL** that you configured above for Ultima Sync!
+- **Features**:
+  - Live synced playback (play, pause, and seek actions sync automatically).
+  - Floating emoji reactions and live player chat.
+  - Movable on-screen reaction bar.
+  - Room management (Host controls, Kick, Mute, Transfer Host).
+  - One-click invite links (`https://your-db-url.firebaseio.com/#ROOM_CODE`).
+
+👉 For full instructions on creating rooms, joining parties, and in-player controls, see the **[Watch Party Guide](WATCH_PARTY_GUIDE.md)**.
+
 ---
 
 ### 🎉 Troubleshooting & Tips
