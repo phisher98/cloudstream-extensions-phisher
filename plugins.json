@@ -1721,7 +1721,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Ultima.cs3",
         "status": 2,
-        "version": 68,
+        "version": 69,
         "name": "Ultima",
         "internalName": "Ultima",
         "authors": [
@@ -1736,19 +1736,19 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Ultima.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-fe550a429486958674319533b4d23e4067b49dc49aa3b7aa19bf4f8a96a1e083"
+        "fileHash": "sha256-03e6fd9c2a0f739425dbafdca1e9b2e48adb5df5cce61677292203272b757b09"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/WatchParty.cs3",
         "status": 1,
-        "version": 1,
+        "version": 2,
         "name": "WatchParty",
         "internalName": "WatchParty",
         "authors": [
             "Phisher98"
         ],
         "description": "Synchronized Watch Party: Watch movies and series together with real-time playback sync, persistent chat window, and host moderation.",
-        "fileSize": 128963,
+        "fileSize": 128964,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1756,7 +1756,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/w1.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-eac893ade1bcbefddbf5627515cf1c0184aa23c91a7db480fd04ca962b1b64a1"
+        "fileHash": "sha256-e3f3cdb11abaabf64f3d7b2c417040d72b4e6f824c882cbde6677f99138fb9a8"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/XDMovies.cs3",
