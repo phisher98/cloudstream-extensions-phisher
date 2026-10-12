@@ -1700,14 +1700,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/UHDmoviesProvider.cs3",
         "status": 1,
-        "version": 41,
+        "version": 42,
         "name": "UHDmoviesProvider",
         "internalName": "UHDmoviesProvider",
         "authors": [
             "Phisher98"
         ],
         "description": "Indian Multi-language 4K Provider",
-        "fileSize": 85336,
+        "fileSize": 86232,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1716,7 +1716,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/UHDmoviesProvider/icon.png",
         "apiVersion": 1,
-        "fileHash": "sha256-5e6b8c57720a397a827d95ef4ea57e7a00489a1023ba57766aa607197700adeb"
+        "fileHash": "sha256-697104b40985e69d6ad849ca917a0dc0d90a589693a9d13b7b46d9c870e4179d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Ultima.cs3",
