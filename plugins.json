@@ -1721,14 +1721,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Ultima.cs3",
         "status": 2,
-        "version": 70,
+        "version": 69,
         "name": "Ultima",
         "internalName": "Ultima",
         "authors": [
             "RowdyRushya,Phisher98"
         ],
         "description": "The ultimate All-in-One home screen to access all of your extensions at one place (You need to select/deselect sections in Ultima's settings to load other extensions on home screen)",
-        "fileSize": 365379,
+        "fileSize": 365434,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1736,7 +1736,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Ultima.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-8e031f32fe438049db0291f4cbafd7ccd7cfa0a262e49dee54c32204f1dbd594"
+        "fileHash": "sha256-7dbe29c2b8b17040e2773bc106a25d465c239af5eded16de5da72b4963377807"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/WatchParty.cs3",
