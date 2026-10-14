@@ -911,7 +911,7 @@
             "Phisher98"
         ],
         "description": "Kartoons (Cartoon & Animes)",
-        "fileSize": 125287,
+        "fileSize": 125299,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -921,7 +921,7 @@
         ],
         "iconUrl": "https://kartoons.me/logo.png",
         "apiVersion": 1,
-        "fileHash": "sha256-f18ca0d02da6af7519ac5081d59da5713781770d5f4e51abd5a6d1f46c328a38"
+        "fileHash": "sha256-9935dfe970bce238442d3b4885df58703376fbafeecd5d552414cbe454ed00ed"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.cs3",
