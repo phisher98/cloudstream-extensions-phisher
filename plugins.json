@@ -519,14 +519,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Comix.cs3",
         "status": 1,
-        "version": 2,
+        "version": 3,
         "name": "Comix",
         "internalName": "Comix",
         "authors": [
             "phisher98"
         ],
         "description": "Comix \u2014 Read Manga, Manhwa, and Comics directly in CloudStream with custom reader.",
-        "fileSize": 64269,
+        "fileSize": 106906,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -535,7 +535,7 @@
         ],
         "iconUrl": "https://comix.to/assets/uploads/35595e3de3c99889c1bd2c56f3e3714fc0c457.png",
         "apiVersion": 1,
-        "fileHash": "sha256-776aa9994e55a3d17f6ca552a4358d442ae8f3649ea38070e0237b3f18a1bc92"
+        "fileHash": "sha256-84f937f0ff79507a36501d54e8dea2ea1e063b9b2ce438484f13fef43a87f3cf"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Desicinemas.cs3",
