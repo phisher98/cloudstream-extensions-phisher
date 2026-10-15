@@ -237,14 +237,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animenosub.cs3",
         "status": 1,
-        "version": 11,
+        "version": 12,
         "name": "Animenosub",
         "internalName": "Animenosub",
         "authors": [
             "Phisher98"
         ],
         "description": "Anime and Movies",
-        "fileSize": 46137,
+        "fileSize": 82499,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -254,7 +254,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=animenosub.to&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-7207eb0b174306ff19fbe63ff6af7c88901e68cecfe358ac73f1ade07584f977"
+        "fileHash": "sha256-fcca81982b66c5bfdc3b29d373ba9c835ccdac013b39b767242e9ea7248bb804"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AnimePahe.cs3",
