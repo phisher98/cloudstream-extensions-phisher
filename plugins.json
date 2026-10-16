@@ -926,13 +926,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Kickassanime.cs3",
         "status": 1,
-        "version": 28,
+        "version": 29,
         "name": "Kickassanime",
         "internalName": "Kickassanime",
         "authors": [
             "Phisher98,Hexated"
         ],
-        "fileSize": 78739,
+        "fileSize": 88441,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -942,7 +942,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/KAA.png",
         "apiVersion": 1,
-        "fileHash": "sha256-844df4bfa011aa12b1ddc7d104f1a88e1c603660d267fccab7ee5ed36979f641"
+        "fileHash": "sha256-1f49be16fc52579dc8b6877d88bd921a8edf5a400b214d15df037509f47bd49d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/KisskhProvider.cs3",
