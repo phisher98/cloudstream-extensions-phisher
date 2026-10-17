@@ -1464,7 +1464,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 2060349,
+        "fileSize": 2060358,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1477,7 +1477,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-b09e5fa2ef8ac2cf6d93a4015e695d787a71f91765bf8176720e542bb645307b"
+        "fileHash": "sha256-948eb8168439a49ba961586a95d25c539d7fcc9a5b0c15afc0a4bb99397a44c7"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
@@ -1768,7 +1768,7 @@
             "Phisher98"
         ],
         "description": "Watch Latest Movies",
-        "fileSize": 162976,
+        "fileSize": 162975,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1779,9 +1779,9 @@
             "Cartoon",
             "AnimeMovie"
         ],
-        "iconUrl": "https://top.xdmovies.wtf/assets/logo1.png",
+        "iconUrl": "https://huh.xdmovies.wtf/assets/logo1.png",
         "apiVersion": 1,
-        "fileHash": "sha256-ae3618864bbceeab17c281038e4ed94bec7cafd7251222002d61e95ea4f504d9"
+        "fileHash": "sha256-9f73e8521048beb5b5f4e606f77660629f2aff7882e04cf8e00c6ff36295bd33"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/YTS.cs3",
