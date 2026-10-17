@@ -259,14 +259,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AnimePahe.cs3",
         "status": 1,
-        "version": 44,
+        "version": 45,
         "name": "AnimePahe",
         "internalName": "AnimePahe",
         "authors": [
             "Cloudburst,Lorem Ipsum,Phisher98"
         ],
         "description": "Animes (SUB/DUB)",
-        "fileSize": 151775,
+        "fileSize": 152640,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -276,7 +276,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png",
         "apiVersion": 1,
-        "fileHash": "sha256-bb45f0cbd441d8ced90fd2c0871872b2eb761350b54d147e529759a2177a44d2"
+        "fileHash": "sha256-ecd09a7d5f0dc70f27f10c1dfa8f74d9da2bbbc4e45546c8abf0d070fc11815e"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animesalt.cs3",
