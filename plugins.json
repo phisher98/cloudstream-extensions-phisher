@@ -947,13 +947,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/KisskhProvider.cs3",
         "status": 1,
-        "version": 22,
+        "version": 24,
         "name": "KisskhProvider",
         "internalName": "KisskhProvider",
         "authors": [
             "Phisher98,Hexated,Peerless"
         ],
-        "fileSize": 66635,
+        "fileSize": 70144,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -964,7 +964,7 @@
         ],
         "iconUrl": "https://www.google.com/s2/favicons?domain=kisskh.co&sz=%size%",
         "apiVersion": 1,
-        "fileHash": "sha256-9b1eff1235e3b6a7f531671af700c735db4d6423002ff5f3d8cb51f597e20857"
+        "fileHash": "sha256-596cda263feeef775548970606bfbc4f61c49fe08025e19588551989c61cc86c"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Latanime.cs3",
