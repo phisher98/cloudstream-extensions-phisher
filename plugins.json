@@ -603,14 +603,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/DudeFilms.cs3",
         "status": 1,
-        "version": 13,
+        "version": 14,
         "name": "DudeFilms",
         "internalName": "DudeFilms",
         "authors": [
             "Phisher98"
         ],
         "description": "Watch Movies & TvSeries (Multi-Lang)",
-        "fileSize": 102622,
+        "fileSize": 104453,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -619,7 +619,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/dudefilms.png",
         "apiVersion": 1,
-        "fileHash": "sha256-e7512f6b2913f4b449e547df8fb9569f58642ff3c59f2a8836da03dda947e39e"
+        "fileHash": "sha256-c2c1ebd9c15e6c22f765cbfc66f50377bc8acc091e9fd24421a0498eb08faeca"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Fibwatch.cs3",
