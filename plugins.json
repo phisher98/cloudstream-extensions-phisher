@@ -332,7 +332,7 @@
             "Phisher98"
         ],
         "description": "AniPm - Watch Anime Online Free",
-        "fileSize": 104803,
+        "fileSize": 107763,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -342,7 +342,7 @@
         ],
         "iconUrl": "https://a.favicon.im/ani.pm?larger=true",
         "apiVersion": 1,
-        "fileHash": "sha256-3c500f351c34ca8d6be59d0b7110c60aca00b20bfff18d6431c7aaca68a02fb8"
+        "fileHash": "sha256-469050c224f0445d3362cbe0ea68d86f1d4c65fac110ee5d9892df25dc79e19e"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniSnatch.cs3",
@@ -1486,7 +1486,7 @@
             "Hexated"
         ],
         "description": "#1 best extention based on MultiAPI",
-        "fileSize": 2070317,
+        "fileSize": 2069528,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1499,7 +1499,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-2a1f8d88980b01fe10fa03288d24911e725ad2fbad1ecb2b363e3ad55c8a861b"
+        "fileHash": "sha256-1726577c5677292ac4c7c7cb8c7e46457f509ca2a116b0972cdd1f3e96ea7b94"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
