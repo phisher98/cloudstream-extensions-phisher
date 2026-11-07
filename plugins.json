@@ -354,7 +354,7 @@
             "Phisher98"
         ],
         "description": "AniSnatch - Watch Anime Online Free",
-        "fileSize": 119902,
+        "fileSize": 125136,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -364,7 +364,7 @@
         ],
         "iconUrl": "https://a.favicon.im/anisnatch.to?larger=true",
         "apiVersion": 1,
-        "fileHash": "sha256-952b015daea98c8279848fda5b69bd81548f0e6506303dda40bdf1e2896bc966"
+        "fileHash": "sha256-ec1987431a35b8fcebd9b7eba30d6ae48c43b332fff67304db5e09f314812fea"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniVortex.cs3",
@@ -1134,28 +1134,6 @@
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/movies4u.png",
         "apiVersion": 1,
         "fileHash": "sha256-79f0f1e139b4b5de4a208319b7b3e41c5411fe3bab55b77dea4a2202511fb58e"
-    },
-    {
-        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MPlayerProvider.cs3",
-        "status": 1,
-        "version": 9,
-        "name": "MPlayerProvider",
-        "internalName": "MPlayerProvider",
-        "authors": [
-            "Phisher98"
-        ],
-        "description": "Indian Movies/Series/Kdrama(Hindi Dubbed)",
-        "fileSize": 121939,
-        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
-        "language": "hi",
-        "tvTypes": [
-            "AsianDrama",
-            "TvSeries",
-            "Movie"
-        ],
-        "iconUrl": "https://www.google.com/s2/favicons?domain=www.mxplayer.in&sz=%size%",
-        "apiVersion": 1,
-        "fileHash": "sha256-5a928bcb46883cbe4cd66714e47d156b362fb534b401632efe8202211cc9c8d4"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MultiMoviesProvider.cs3",
