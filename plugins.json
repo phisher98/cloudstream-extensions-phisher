@@ -666,7 +666,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Fivemovierulz.cs3",
         "status": 1,
-        "version": 9,
+        "version": 10,
         "name": "Fivemovierulz",
         "internalName": "Fivemovierulz",
         "authors": [
@@ -674,7 +674,7 @@
             "Dilip"
         ],
         "description": "Movies & Series",
-        "fileSize": 59458,
+        "fileSize": 59479,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "ta",
         "tvTypes": [
@@ -683,7 +683,7 @@
         ],
         "iconUrl": "https://i.ibb.co/SwQRhsn/20241016-074942.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-fa82001cd2a9d12fe46a27e48dcb4965cb9e50554d9a8db103faa7d1951685ef"
+        "fileHash": "sha256-892f80883877266bf61c0c6c60991748c1c5211bbae6bec03981b818a7489765"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/FourKHDHub.cs3",
@@ -1593,14 +1593,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Toonstream.cs3",
         "status": 1,
-        "version": 11,
+        "version": 12,
         "name": "Toonstream",
         "internalName": "Toonstream",
         "authors": [
             "Phisher98"
         ],
         "description": "ToonStream Multi Language",
-        "fileSize": 83757,
+        "fileSize": 85862,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1612,7 +1612,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/toonstream.png",
         "apiVersion": 1,
-        "fileHash": "sha256-ad85cebf9255cfb5ce1f719f563bcf94e474e18226853b78de58510a325e84d0"
+        "fileHash": "sha256-cbf3d551c7020acb48e309fbeb12322844177a6dc3f38b98444843d8486cc83d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/ToonTales.cs3",
