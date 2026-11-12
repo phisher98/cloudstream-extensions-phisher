@@ -259,7 +259,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AnimePahe.cs3",
         "status": 1,
-        "version": 52,
+        "version": 53,
         "name": "AnimePahe",
         "internalName": "AnimePahe",
         "authors": [
@@ -276,7 +276,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png",
         "apiVersion": 1,
-        "fileHash": "sha256-a87c09502091c0efae0b031574a0314ed354ccbe6dbf79237e8da697f4f5346b"
+        "fileHash": "sha256-7280dd6faab9136ae7e9e15aaccc3ba810de9359a0f97ba9e7ce0a05b978ee1d"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animesalt.cs3",
