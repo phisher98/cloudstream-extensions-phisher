@@ -94,7 +94,7 @@
             "phisher98"
         ],
         "description": "AniKoto",
-        "fileSize": 83065,
+        "fileSize": 83032,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -103,7 +103,7 @@
         ],
         "iconUrl": "https://anikototv.bz/AnikotoTheme/assets/images/favicon.png",
         "apiVersion": 1,
-        "fileHash": "sha256-f9df5aacba18f14b15b95815ce2575190db14f1581267ccc914222cdd19830da"
+        "fileHash": "sha256-fd6926b0c08c1cc9ccb832b1f5fa1a34055fe3a468498d1539a4f31168f36dec"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anilight.cs3",
