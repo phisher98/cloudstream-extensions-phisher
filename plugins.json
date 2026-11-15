@@ -87,23 +87,23 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AniKoto.cs3",
         "status": 1,
-        "version": 6,
+        "version": 7,
         "name": "AniKoto",
         "internalName": "AniKoto",
         "authors": [
             "phisher98"
         ],
         "description": "AniKoto",
-        "fileSize": 82813,
+        "fileSize": 83065,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
             "Anime",
             "AnimeMovie"
         ],
-        "iconUrl": "https://anikototv.to/AnikotoTheme/assets/images/favicon.png",
+        "iconUrl": "https://anikototv.bz/AnikotoTheme/assets/images/favicon.png",
         "apiVersion": 1,
-        "fileHash": "sha256-da02652fc7fe17a7b904453cb714a447bac87af60371f84eb01afdd95d2cf51d"
+        "fileHash": "sha256-f9df5aacba18f14b15b95815ce2575190db14f1581267ccc914222cdd19830da"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Anilight.cs3",
@@ -1462,7 +1462,7 @@
             "Hexated"
         ],
         "description": "#1 best extension based on MultiAPI",
-        "fileSize": 2181036,
+        "fileSize": 2181035,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1475,7 +1475,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-b4ad26b1d2f18cd30450e4dd75242dd8bfcaf475e30dcca4924613abe9f5397e"
+        "fileHash": "sha256-bf58030b4a58e8f919d433e1f5fb1983ac306ed85d625f998ca2afa7742fbaab"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
