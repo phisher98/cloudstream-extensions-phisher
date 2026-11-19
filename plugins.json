@@ -239,14 +239,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/AnimePahe.cs3",
         "status": 1,
-        "version": 56,
+        "version": 57,
         "name": "AnimePahe",
         "internalName": "AnimePahe",
         "authors": [
             "Cloudburst,Lorem Ipsum,Phisher98"
         ],
         "description": "Animes (SUB/DUB)",
-        "fileSize": 218886,
+        "fileSize": 218930,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -256,7 +256,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png",
         "apiVersion": 1,
-        "fileHash": "sha256-212ad95f816b09c44f561eb08a70b806d772c92b717393863afc2ba151651204"
+        "fileHash": "sha256-e5e285dcec01d3f40e7a1ed544e83320643e6e941827ef90ff86e9b3263bc701"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Animesalt.cs3",
@@ -1456,7 +1456,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StreamPlay.cs3",
         "status": 1,
-        "version": 713,
+        "version": 714,
         "name": "StreamPlay",
         "internalName": "StreamPlay",
         "authors": [
@@ -1464,7 +1464,7 @@
             "Hexated"
         ],
         "description": "#1 best extension based on MultiAPI",
-        "fileSize": 2212733,
+        "fileSize": 2217912,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1477,7 +1477,7 @@
         ],
         "iconUrl": "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1",
         "apiVersion": 1,
-        "fileHash": "sha256-e0603107e4ca259dc19b2dcb887b876f7e61ff0e35d249c7ba52fecc76c25e6d"
+        "fileHash": "sha256-87556ceeca353feb332e60e12f26190c4b2a96ebfe55b4fefd437ae1cd46ab86"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/StremioAddon.cs3",
