@@ -729,6 +729,28 @@
         "fileHash": "sha256-9da85c2b7b2525ac9fad3a88b1d798e19d99a86b2a55735350d617bb972144d2"
     },
     {
+        "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Gotaku.cs3",
+        "status": 1,
+        "version": 2,
+        "name": "Gotaku",
+        "internalName": "Gotaku",
+        "authors": [
+            "manavchaudhary1 (original Aniyomi ext)"
+        ],
+        "description": "Gotaku (gotaku.to) - anime with soft sub, hard sub and dub. Ported from the Aniyomi extension.",
+        "fileSize": 169423,
+        "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
+        "language": "en",
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie",
+            "OVA"
+        ],
+        "iconUrl": "https://www.google.com/s2/favicons?domain=gotaku.to&sz=%size%",
+        "apiVersion": 1,
+        "fileHash": "sha256-a72b4c1b85a021d5e33758afb2309e0103d1b25b4f42281294ef64241c0ac55e"
+    },
+    {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/HDhub4u.cs3",
         "status": 1,
         "version": 57,
