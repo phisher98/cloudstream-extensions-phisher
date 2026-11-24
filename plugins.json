@@ -836,13 +836,13 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/IdlixProvider.cs3",
         "status": 1,
-        "version": 26,
+        "version": 27,
         "name": "IdlixProvider",
         "internalName": "IdlixProvider",
         "authors": [
             "Phisher98"
         ],
-        "fileSize": 210715,
+        "fileSize": 229573,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "id",
         "tvTypes": [
@@ -853,7 +853,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/idlix.png",
         "apiVersion": 1,
-        "fileHash": "sha256-b0b43f844043a657b6787f120a39de81ba9c31aa025494475d2065266e800c83"
+        "fileHash": "sha256-630d9e976a3211b2bfdfeacbaff31771dc27d5491f1b4def8129c91a59838c49"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/IPTVPlayer.cs3",
