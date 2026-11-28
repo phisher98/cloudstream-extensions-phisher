@@ -1813,7 +1813,7 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/VegaMovies.cs3",
         "status": 1,
-        "version": 83,
+        "version": 84,
         "name": "VegaMovies",
         "internalName": "VegaMovies",
         "authors": [
@@ -1821,7 +1821,7 @@
             "Phisher98"
         ],
         "description": "Includes Rogmovies, GokuHD",
-        "fileSize": 148682,
+        "fileSize": 149535,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1832,7 +1832,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/Utils/refs/heads/main/Icons/VegaMovies.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-5f6171cf68801736d74b7568d66df129da66c92d350aa2cb135fc173dcd70855"
+        "fileHash": "sha256-91188d14e4c13daf3fb77960ac99394069d67a0f6a6656c4afdefcbb43571ffc"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/WatchParty.cs3",
