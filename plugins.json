@@ -1192,7 +1192,7 @@
             "Phisher98"
         ],
         "description": "Includes TopMovies",
-        "fileSize": 147346,
+        "fileSize": 147745,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "en",
         "tvTypes": [
@@ -1203,7 +1203,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/Utils/refs/heads/main/Icons/Moviesmod.png",
         "apiVersion": 1,
-        "fileHash": "sha256-d84d09ffe06b4f35d0f53a7de41ff8c205025111890cfafd071dd83513509bd1"
+        "fileHash": "sha256-5dbfd7e16ff16b89868dc3a238bcb405fbcc2a4481a18e861a6e6d1dc9d1e0e3"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/MultiMoviesProvider.cs3",
@@ -1821,7 +1821,7 @@
             "Phisher98"
         ],
         "description": "Includes Rogmovies, GokuHD",
-        "fileSize": 149535,
+        "fileSize": 149697,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -1832,7 +1832,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/Utils/refs/heads/main/Icons/VegaMovies.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-91188d14e4c13daf3fb77960ac99394069d67a0f6a6656c4afdefcbb43571ffc"
+        "fileHash": "sha256-8118a7eddacde8dac09e0363a7bb1a0341994566e3117422ef06ab398f93e6cc"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/WatchParty.cs3",
