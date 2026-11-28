@@ -878,14 +878,14 @@
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/IStreamFlare.cs3",
         "status": 1,
-        "version": 7,
+        "version": 8,
         "name": "IStreamFlare",
         "internalName": "IStreamFlare",
         "authors": [
             "Phisher98"
         ],
         "description": "Movies/Series/Anime",
-        "fileSize": 226234,
+        "fileSize": 236930,
         "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
         "language": "hi",
         "tvTypes": [
@@ -898,7 +898,7 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/phisher98/Utils/refs/heads/main/Icons/streamflare.png",
         "apiVersion": 1,
-        "fileHash": "sha256-9dff08bb8fe91b3932c90b9d701a723fee44c893500b4862f2224a7f22a90dff"
+        "fileHash": "sha256-54c579afa0ceef8076e9b9e2fcc0f832d56b0fa1c9e086a87f980e299db33e9e"
     },
     {
         "url": "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/builds/Jellyfin.cs3",
